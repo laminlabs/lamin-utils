@@ -1,10 +1,16 @@
+import os
 import sys
 
 from loguru import logger
 
+if os.name == "nt":
+    format = "{message}"
+else:
+    fromat = "{level.icon} | {message}"
+
 default_handler = dict(
     sink=sys.stdout,
-    format="{level.icon} | {message}",
+    format=format,
 )
 
 logger.configure(handlers=[default_handler])
