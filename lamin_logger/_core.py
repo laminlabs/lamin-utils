@@ -1,15 +1,9 @@
-import codecs
-import locale
 import sys
 
 from loguru import logger
 
-# so that the emojis can display correctly
-sys.stdout = codecs.getwriter(locale.getpreferredencoding())(sys.stdout)  # type: ignore
-
-
 default_handler = dict(
-    sink=sys.stdout,
+    sink=sys.stderr,
     format="{level.icon} {message}",
 )
 
