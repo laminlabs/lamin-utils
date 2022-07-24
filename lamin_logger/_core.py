@@ -6,7 +6,7 @@ from loguru import logger
 if os.name == "nt":
     format = "{message}"
 else:
-    format = "{level.icon} | {message}"
+    format = "{level.icon} {message}"
 
 default_handler = dict(
     sink=sys.stdout,
