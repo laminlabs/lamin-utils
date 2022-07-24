@@ -1,16 +1,16 @@
-import os
+import codecs
+import locale
 import sys
 
 from loguru import logger
 
-if os.name == "nt":
-    format = "{message}"
-else:
-    format = "{level.icon} {message}"
+# so that the emojis can display correctly
+sys.stdout = codecs.getwriter(locale.getpreferredencoding())(sys.stdout)  # type: ignore
+
 
 default_handler = dict(
     sink=sys.stdout,
-    format=format,
+    format="{level.icon} {message}",
 )
 
 logger.configure(handlers=[default_handler])
