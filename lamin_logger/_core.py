@@ -9,7 +9,7 @@ else:
     format = "{level.icon} {message}"
 
 default_handler = dict(
-    sink=sys.stderr,
+    sink=sys.stdout,
     format=format,
 )
 
