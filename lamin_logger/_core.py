@@ -1,10 +1,16 @@
+import platform
 import sys
 
 from loguru import logger
 
+if platform.system() == "Windows":
+    format = "{level.name} {message}"
+else:
+    format = "{level.icon} {message}"
+
 default_handler = dict(
     sink=sys.stderr,
-    format="{level.icon} {message}",
+    format=format,
 )
 
 logger.configure(handlers=[default_handler])
