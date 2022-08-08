@@ -15,3 +15,4 @@ This is the complete API reference:
 __version__ = "0.1.2"
 
 from ._core import colors, logger  # noqa
+from . import _configure_external  # noqa
