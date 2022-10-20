@@ -13,4 +13,9 @@ try:
 except ImportError:
     pass
 
-logging.getLogger("numexpr").setLevel(logging.WARNING)
+try:
+    import numexpr  # noqa
+
+    logging.getLogger("numexpr").setLevel(logging.WARNING)
+except ImportError:
+    pass
