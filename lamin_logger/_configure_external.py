@@ -12,3 +12,5 @@ try:
     logger.setLevel(logging.WARNING)
 except ImportError:
     pass
+
+logging.getLogger("numexpr").setLevel(logging.WARNING)
