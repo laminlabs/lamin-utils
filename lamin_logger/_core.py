@@ -11,7 +11,7 @@ else:
 default_handler = dict(
     sink=sys.stdout,
     format=format,
-    # level="INFO",
+    level="INFO",
 )
 
 logger.configure(handlers=[default_handler])
