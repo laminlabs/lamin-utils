@@ -4,20 +4,27 @@ import sys
 from loguru import logger
 
 if platform.system() == "Windows":
-    format = "{level.name} {message}"
+    format = "{message}"
 else:
     format = "{level.icon} {message}"
 
 default_handler = dict(
     sink=sys.stdout,
     format=format,
-    level="INFO",
+    level=15,
 )
 
 logger.configure(handlers=[default_handler])
 logger.level("SUCCESS", icon="✅")
+logger.level("HINT", icon="💡", no=15)
 logger.level("WARNING", icon="🔶")
 
+
+def hint(message):
+    return logger.log("HINT", message)
+
+
+logger.hint = hint
 
 # ANSI color code: https://gist.github.com/iansan5653/c4a0b9f5c30d74258c5f132084b78db9
 ANSI_COLORS = dict(
