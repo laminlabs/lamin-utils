@@ -2,17 +2,17 @@ from pathlib import Path
 
 import nox
 
-nox.options.reuse_existing_virtualenvs = True
+nox.options.default_venv_backend = "none"
 
 
-@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11"])
+@nox.session
 def lint(session: nox.Session) -> None:
     session.install("pre-commit")
     session.run("pre-commit", "install")
     session.run("pre-commit", "run", "--all-files")
 
 
-@nox.session(python=["3.7", "3.8", "3.9", "3.10", "3.11"])
+@nox.session
 def build(session):
     session.install(".[dev,test]")
     session.run(
