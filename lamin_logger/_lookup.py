@@ -56,7 +56,7 @@ class Lookup:
                 df_dict[value] = row
         return df_dict
 
-    def _append_records_to_list(self, df_dict: dict, value: str, record) -> None:
+    def _append_records_to_list(self, df_dict: Dict, value: str, record) -> None:
         """Append unique records to a list."""
         values_list = df_dict[value]
         if not isinstance(values_list, list):
@@ -65,7 +65,7 @@ class Lookup:
         values_set.add(record)
         df_dict[value] = list(values_set)
 
-    def _create_lookup_dict(self, lkeys: dict, df_dict: dict) -> Dict:
+    def _create_lookup_dict(self, lkeys: Dict, df_dict: Dict) -> Dict:
         lkey_dict: Dict = {}  # a dict of namedtuples as records and lookup keys as keys
         for lkey, values in lkeys.items():
             if isinstance(values, list):
