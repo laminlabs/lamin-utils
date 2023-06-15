@@ -191,8 +191,12 @@ RootLogger.set_level = set_log_level  # type: ignore
 
 
 def set_verbosity(logger, verbosity: int):
-    logger._verbosity = verbosity
+    if verbosity not in VERBOSITY_TO_LOGLEVEL:
+        raise ValueError(
+            f"verbosity needs to be one of {set(VERBOSITY_TO_LOGLEVEL.keys())}"
+        )
     logger.set_level(VERBOSITY_TO_LOGLEVEL[verbosity])
+    logger._verbosity = verbosity
 
 
 RootLogger.set_verbosity = set_verbosity  # type: ignore
