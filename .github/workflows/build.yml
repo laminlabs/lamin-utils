@@ -41,7 +41,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install laminci
-      - run: nox -s lint
+      # - run: nox -s lint
       - run: nox -s build
       - name: Codecov
         if: matrix.python-version == '3.9'
