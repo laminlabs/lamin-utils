@@ -41,7 +41,7 @@ def genes():
     return gene_symbols, df
 
 
-def test_map_synonyms(genes, celltypes):
+def test_map_synonyms(genes):
     gene_symbols, df = genes
 
     mapping = map_synonyms(
@@ -69,7 +69,7 @@ def test_unsupported_field(genes):
         map_synonyms(df=df, identifiers=gene_symbols, field="name", return_mapper=False)
 
 
-def test_explode_aggregated_column_to_expand(df):
+def test_explode_aggregated_column_to_expand(genes):
     _, df = genes
     with pytest.raises(AssertionError):
         explode_aggregated_column_to_expand(
