@@ -3,7 +3,7 @@ import platform
 
 from packaging import version
 
-from ._core import logger
+from ._logger import logger
 
 py_version = version.parse(platform.python_version())
 
