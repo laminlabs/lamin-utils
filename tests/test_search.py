@@ -3,7 +3,7 @@ import pytest
 from lamin_logger._search import search
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def df():
     import pandas as pd
 

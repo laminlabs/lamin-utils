@@ -3,7 +3,7 @@ import pytest
 from lamin_logger._map_synonyms import explode_aggregated_column_to_expand, map_synonyms
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def genes():
     import pandas as pd
 

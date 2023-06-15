@@ -1,6 +1,6 @@
 from typing import Any, Union
 
-from ._core import logger
+from lamin_logger import logger
 
 
 def search(
