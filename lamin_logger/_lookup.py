@@ -1,6 +1,42 @@
 import re
 from collections import namedtuple
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+
+def _append_records_to_list(df_dict: Dict, value: str, record) -> None:
+    """Append unique records to a list."""
+    values_list = df_dict[value]
+    if not isinstance(values_list, list):
+        values_list = [values_list]
+    values_set = set(values_list)
+    values_set.add(record)
+    df_dict[value] = list(values_set)
+
+
+def _create_df_dict(
+    df: Any = None,
+    field: Optional[str] = None,
+    records: Optional[List] = None,
+    values: Optional[List] = None,
+    tuple_name: Optional[str] = None,
+) -> Dict:
+    """Create a dict with {lookup key: records in namedtuple}.
+
+    Value is a list of namedtuples if multiple records match the same key.
+    """
+    if df is not None:
+        records = df.itertuples(index=False, name=tuple_name)
+        values = df[field]
+    df_dict: Dict = {}  # a dict of namedtuples as records and values as keys
+    for i, row in enumerate(records):  # type:ignore
+        value = values[i]  # type:ignore
+        if not isinstance(value, str):
+            continue
+        if value in df_dict:
+            _append_records_to_list(df_dict=df_dict, value=value, record=row)
+        else:
+            df_dict[value] = row
+    return df_dict
 
 
 class Lookup:
@@ -8,11 +44,25 @@ class Lookup:
 
     # removed DataFrame type annotation to speed up import time
     def __init__(
-        self, df: Any, field: str, tuple_name="MyTuple", prefix: str = "bt"
+        self,
+        field: Optional[str] = None,
+        tuple_name="MyTuple",
+        prefix: str = "bt",
+        df: Any = None,
+        values: Optional[Iterable] = None,
+        records: Optional[List] = None,
     ) -> None:
         self._tuple_name = tuple_name
-        lkeys = self._to_lookup_keys(values=df[field], prefix=prefix)
-        self._df_dict = self._create_df_dict(df=df, field=field)
+        if df is not None:
+            values = df[field]
+        self._df_dict = _create_df_dict(
+            df=df,
+            field=field,
+            records=records,
+            values=values,  # type:ignore
+            tuple_name=self._tuple_name,
+        )
+        lkeys = self._to_lookup_keys(values=values, prefix=prefix)  # type:ignore
         self._lookup_dict = self._create_lookup_dict(lkeys=lkeys, df_dict=self._df_dict)
 
     def _to_lookup_keys(self, values: Iterable, prefix: str) -> Dict:
@@ -35,35 +85,10 @@ class Lookup:
             if lkey in lkeys:
                 # if multiple values have the same lookup key
                 # put the values into a list
-                self._append_records_to_list(df_dict=lkeys, value=lkey, record=value)
+                _append_records_to_list(df_dict=lkeys, value=lkey, record=value)
             else:
                 lkeys[lkey] = value
         return lkeys
-
-    def _create_df_dict(self, df: Any, field: str) -> Dict:
-        """Create a dict with {lookup key: records in namedtuple}.
-
-        Value is a list of namedtuples if multiple records match the same key.
-        """
-        df_dict: Dict = {}  # a dict of namedtuples as records and values as keys
-        for i, row in enumerate(df.itertuples(index=False, name=self._tuple_name)):
-            value = df[field][i]
-            if not isinstance(value, str):
-                continue
-            if value in df_dict:
-                self._append_records_to_list(df_dict=df_dict, value=value, record=row)
-            else:
-                df_dict[value] = row
-        return df_dict
-
-    def _append_records_to_list(self, df_dict: Dict, value: str, record) -> None:
-        """Append unique records to a list."""
-        values_list = df_dict[value]
-        if not isinstance(values_list, list):
-            values_list = [values_list]
-        values_set = set(values_list)
-        values_set.add(record)
-        df_dict[value] = list(values_set)
 
     def _create_lookup_dict(self, lkeys: Dict, df_dict: Dict) -> Dict:
         lkey_dict: Dict = {}  # a dict of namedtuples as records and lookup keys as keys
