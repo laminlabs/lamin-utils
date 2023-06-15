@@ -39,22 +39,21 @@ def search(
             processor = utils.default_process
         return iterable.apply(lambda x: fuzz.ratio(string, x, processor=processor))
 
-    if synonyms_field == field:
-        logger.warning(
-            "Input field is the same as synonyms field, skipping synonyms matching"
-        )
+    if (synonyms_field in df.columns) and (synonyms_field != field):
+        df_exp = explode_aggregated_column_to_expand(
+            df,
+            aggregated_col=synonyms_field,  # type:ignore
+            target_col=field,
+            sep=synonyms_sep,
+        ).reset_index()
+        target_column = synonyms_field
     else:
-        if (synonyms_field is not None) and (synonyms_field in df.columns):
-            df_exp = explode_aggregated_column_to_expand(
-                df,
-                aggregated_col=synonyms_field,
-                target_col=field,
-                sep=synonyms_sep,
-            ).reset_index()
-            target_column = synonyms_field
-        else:
-            df_exp = df.copy()
-            target_column = field
+        if synonyms_field == field:
+            logger.warning(
+                "Input field is the same as synonyms field, skipping synonyms matching"
+            )
+        df_exp = df.copy()
+        target_column = field
 
     df_exp["__ratio__"] = _fuzz_ratio(
         string=string, iterable=df_exp[target_column], case_sensitive=case_sensitive
