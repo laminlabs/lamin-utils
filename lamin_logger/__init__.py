@@ -14,6 +14,6 @@ This is the complete API reference:
 
 __version__ = "0.4.0"
 
-from ._core import colors, logger  # noqa
-from ._logger import RootLogger, _set_log_file, set_log_level
+from ._core import colors  # noqa
+from ._logger import logger
 from ._python_version import py_version_warning  # noqa

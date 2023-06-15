@@ -33,37 +33,41 @@
 import logging
 import platform
 from datetime import datetime, timedelta, timezone
-from logging import CRITICAL, DEBUG, ERROR, INFO, WARNING
+from logging import CRITICAL, DEBUG, ERROR, INFO, WARNING, getLevelName
 from typing import Optional
 
-VERBOSITY_TO_LOGLEVEL = {
-    "error": "ERROR",
-    "warning": "WARNING",
-    "info": "INFO",
-    "hint": "HINT",
-    "debug": "DEBUG",
-}
-for v, level in enumerate(list(VERBOSITY_TO_LOGLEVEL.values())):
-    VERBOSITY_TO_LOGLEVEL[v] = level  # type: ignore
-
-
-class Settings:
-    @property
-    def versbosity(self) -> int:
-        return 1
-
-
-HINT = (INFO + DEBUG) // 2
+HINT = 15
+DOWNLOAD = 21
+SUCCESS = 25
 logging.addLevelName(HINT, "HINT")
+logging.addLevelName(DOWNLOAD, "DOWNLOAD")
+logging.addLevelName(SUCCESS, "SUCCESS")
+
+VERBOSITY_TO_LOGLEVEL = {
+    0: "ERROR",
+    1: "WARNING",
+    2: "INFO",
+    3: "HINT",
+    4: "DEBUG",
+}
+
+
+LEVEL_TO_ICONS = {
+    40: "❌",  # error
+    30: "🔶",  # warning
+    25: "✅",  # success
+    21: "💾",  # download
+    20: "💬",  # info
+    15: "💡",  # hint
+    10: "🐛",  # debug
+}
 
 
 class RootLogger(logging.RootLogger):
-    def __init__(self, level, settings=None):
+    def __init__(self, level="INFO"):
         super().__init__(level)
         self.propagate = False
-        if settings is None:
-            settings = Settings()
-        self.settings = settings
+        self._verbosity: int = 1
         RootLogger.manager = logging.Manager(self)
 
     def log(  # type: ignore
@@ -92,7 +96,9 @@ class RootLogger(logging.RootLogger):
         time_passed: timedelta = None if time is None else now - time  # type: ignore
         extra = {
             **(extra or {}),
-            "deep": deep if self.settings.verbosity.level < level else None,
+            "deep": deep
+            if getLevelName(VERBOSITY_TO_LOGLEVEL[self._verbosity]) < level
+            else None,
             "time_passed": time_passed,
         }
         super().log(level, msg, extra=extra)
@@ -107,43 +113,20 @@ class RootLogger(logging.RootLogger):
     def warning(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
         return self.log(WARNING, msg, time=time, deep=deep, extra=extra)
 
+    def success(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+        return self.log(SUCCESS, msg, time=time, deep=deep, extra=extra)
+
     def info(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
         return self.log(INFO, msg, time=time, deep=deep, extra=extra)
+
+    def download(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+        return self.log(DOWNLOAD, msg, time=time, deep=deep, extra=extra)
 
     def hint(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
         return self.log(HINT, msg, time=time, deep=deep, extra=extra)
 
     def debug(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
         return self.log(DEBUG, msg, time=time, deep=deep, extra=extra)
-
-
-def _set_log_file(settings):
-    file = settings.logfile
-    name = settings.logpath
-    root = settings._root_logger
-    h = logging.StreamHandler(file) if name is None else logging.FileHandler(name)
-    h.setFormatter(_LogFormatter())
-    h.setLevel(root.level)
-    if len(root.handlers) == 1:
-        root.removeHandler(root.handlers[0])
-    elif len(root.handlers) > 1:
-        raise RuntimeError("Lamin's root logger somehow got more than one handler")
-    root.addHandler(h)
-
-
-def set_log_level(settings, level: int):
-    root = settings._root_logger
-    root.setLevel(level)
-    (h,) = root.handlers  # may only be 1
-    h.setLevel(level)
-
-
-icons = {
-    40: "❌",  # hint
-    30: "🔶",  # warning
-    25: "✅",  # success
-    15: "💡",  # hint
-}
 
 
 class _LogFormatter(logging.Formatter):
@@ -156,7 +139,7 @@ class _LogFormatter(logging.Formatter):
         if platform.system() == "Windows":
             return f"{record.levelname}:" + " {message}"
         else:
-            return f"{icons[record.levelno]}" + " {message}"
+            return f"{LEVEL_TO_ICONS[record.levelno]}" + " {message}"
 
     def format(self, record: logging.LogRecord):
         format_orig = self._style._fmt
@@ -178,3 +161,38 @@ class _LogFormatter(logging.Formatter):
         result = logging.Formatter.format(self, record)
         self._style._fmt = format_orig
         return result
+
+
+logger = RootLogger()
+
+
+def set_handler(logger):
+    h = logging.StreamHandler()
+    h.setFormatter(_LogFormatter())
+    h.setLevel(logger.level)
+    if len(logger.handlers) == 1:
+        logger.removeHandler(logger.handlers[0])
+    elif len(logger.handlers) > 1:
+        raise RuntimeError("Lamin's root logger somehow got more than one handler")
+    logger.addHandler(h)
+
+
+set_handler(logger)
+
+
+def set_log_level(logger, level: int):
+    logger.setLevel(level)
+    (h,) = logger.handlers  # may only be 1
+    h.setLevel(level)
+
+
+# this also sets it for the handler
+RootLogger.set_level = set_log_level  # type: ignore
+
+
+def set_verbosity(logger, verbosity: int):
+    logger._verbosity = verbosity
+    logger.set_level(VERBOSITY_TO_LOGLEVEL[verbosity])
+
+
+RootLogger.set_verbosity = set_verbosity  # type: ignore
