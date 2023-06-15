@@ -182,7 +182,7 @@ set_handler(logger)
 
 def set_log_level(logger, level: int):
     logger.setLevel(level)
-    (h,) = logger.handlers  # may only be 1
+    (h,) = logger.handlers  # can only be 1
     h.setLevel(level)
 
 
