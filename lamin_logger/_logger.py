@@ -32,6 +32,7 @@
 """Logging and Profiling."""
 import logging
 import platform
+import sys
 from datetime import datetime, timedelta, timezone
 from logging import CRITICAL, DEBUG, ERROR, INFO, WARNING, getLevelName
 from typing import Optional
@@ -167,7 +168,7 @@ logger = RootLogger()
 
 
 def set_handler(logger):
-    h = logging.StreamHandler()
+    h = logging.StreamHandler(stream=sys.stdout)
     h.setFormatter(_LogFormatter())
     h.setLevel(logger.level)
     if len(logger.handlers) == 1:
