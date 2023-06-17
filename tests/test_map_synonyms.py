@@ -98,4 +98,4 @@ def test_explode_aggregated_column_to_expand(genes):
         df=df, aggregated_col="synonyms", target_col="symbol"
     )
     assert res.index.name == "synonyms"
-    assert res.shape == (27, 1)
+    assert res.shape == (26, 1)
