@@ -112,10 +112,17 @@ def test_explode_aggregated_column_to_expand(genes):
     assert res.index.name == "synonyms"
     assert res.shape == (26, 1)
 
+    with pytest.raises(KeyError):
+        explode_aggregated_column_to_expand(df=df, aggregated_col="name")
+
     res = explode_aggregated_column_to_expand(
         df=df, aggregated_col="synonyms", target_col=None
     )
-    assert res.index.name == "index"
+    assert "index" in res.columns
+    assert df.index.name == "index"
 
-    with pytest.raises(KeyError):
-        explode_aggregated_column_to_expand(df=df, aggregated_col="name")
+    df.index.name = "index-name"
+    res = explode_aggregated_column_to_expand(
+        df=df, aggregated_col="synonyms", target_col=None
+    )
+    assert "index-name" in res.columns
