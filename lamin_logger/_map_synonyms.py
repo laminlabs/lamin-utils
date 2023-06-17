@@ -35,7 +35,7 @@ def map_synonyms(
         raise KeyError("synonyms_field must be different from field!")
 
     alias_map = explode_aggregated_column_to_expand(
-        df,
+        df=df,
         aggregated_col=synonyms_field,
         target_col=field,
         sep=sep,
@@ -113,4 +113,4 @@ def explode_aggregated_column_to_expand(
     df_concat = df_concat.astype(str)
     df_concat = df_concat.groupby(aggregated_col).agg(sep.join)
 
-    return df_concat
+    return df_concat[df_concat.index != ""]

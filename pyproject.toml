@@ -39,8 +39,3 @@ preview = true
 testpaths = [
     "tests",
 ]
-
-[tool.coverage.run]
-omit = [
-    "lamin_logger/*",
-]

@@ -54,13 +54,31 @@ def test_map_synonyms(genes):
 def test_map_synonyms_return_mapper(genes):
     gene_symbols, df = genes
 
-    mapping = map_synonyms(
+    mapper = map_synonyms(
         df=df, identifiers=gene_symbols, field="symbol", return_mapper=True
     )
 
-    expected_synonym_mapping = {"FANCD1": "BRCA2"}
+    assert mapper == {"FANCD1": "BRCA2"}
 
-    assert mapping == expected_synonym_mapping
+
+def test_map_synonyms_empty_values(genes):
+    _, df = genes
+
+    result = map_synonyms(
+        df=df,
+        identifiers=["", " ", None, "CD3", "FANCD1"],
+        field="symbol",
+        return_mapper=False,
+    )
+    assert result == ["", " ", None, "CD3", "BRCA2"]
+
+    mapper = map_synonyms(
+        df=df,
+        identifiers=["", " ", None, "CD3", "FANCD1"],
+        field="symbol",
+        return_mapper=True,
+    )
+    assert mapper == {"FANCD1": "BRCA2"}
 
 
 def test_unsupported_field(genes):
