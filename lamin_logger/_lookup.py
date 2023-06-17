@@ -32,6 +32,8 @@ def _create_df_dict(
         value = values[i]  # type:ignore
         if not isinstance(value, str):
             continue
+        if value == "":
+            continue
         if value in df_dict:
             _append_records_to_list(df_dict=df_dict, value=value, record=row)
         else:

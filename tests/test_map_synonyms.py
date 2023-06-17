@@ -85,6 +85,18 @@ def test_unsupported_field(genes):
     gene_symbols, df = genes
     with pytest.raises(KeyError):
         map_synonyms(df=df, identifiers=gene_symbols, field="name", return_mapper=False)
+    with pytest.raises(KeyError):
+        map_synonyms(
+            df=df, identifiers=gene_symbols, synonyms_field="name", return_mapper=False
+        )
+    with pytest.raises(KeyError):
+        map_synonyms(
+            df=df,
+            identifiers=gene_symbols,
+            field="symbol",
+            synonyms_field="symbol",
+            return_mapper=False,
+        )
 
 
 def test_explode_aggregated_column_to_expand(genes):
@@ -99,3 +111,11 @@ def test_explode_aggregated_column_to_expand(genes):
     )
     assert res.index.name == "synonyms"
     assert res.shape == (26, 1)
+
+    res = explode_aggregated_column_to_expand(
+        df=df, aggregated_col="synonyms", target_col=None
+    )
+    assert res.index.name == "index"
+
+    with pytest.raises(KeyError):
+        explode_aggregated_column_to_expand(df=df, aggregated_col="name")

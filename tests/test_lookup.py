@@ -6,8 +6,15 @@ from lamin_logger._lookup import Lookup
 def test_lookup():
     df = pd.DataFrame(
         {
-            "name": ["Sample 1", "Sample 1", "sample 1", "1 sample"],
-            "meta1": ["metadata~1", "metadata~1~1", "metadata~1~1~1", "1 metadata"],
+            "name": ["Sample 1", "Sample 1", "sample 1", "1 sample", "", None],
+            "meta1": [
+                "metadata~1",
+                "metadata~1~1",
+                "metadata~1~1~1",
+                "1 metadata",
+                None,
+                None,
+            ],
         }
     )
 
