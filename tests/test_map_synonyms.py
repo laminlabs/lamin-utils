@@ -87,7 +87,11 @@ def test_unsupported_field(genes):
         map_synonyms(df=df, identifiers=gene_symbols, field="name", return_mapper=False)
     with pytest.raises(KeyError):
         map_synonyms(
-            df=df, identifiers=gene_symbols, synonyms_field="name", return_mapper=False
+            df=df,
+            identifiers=gene_symbols,
+            field="symbol",
+            synonyms_field="name",
+            return_mapper=False,
         )
     with pytest.raises(KeyError):
         map_synonyms(
