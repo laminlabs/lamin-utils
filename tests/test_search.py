@@ -67,3 +67,18 @@ def test_search_return_tie_results(df):
 def test_search_non_default_field(df):
     res = search(df=df, string="type F enteroendocrine", field="synonyms")
     res.synonyms == "type F enteroendocrine cell"
+
+
+def test_search_case_sensitive(df):
+    res = search(df=df, string="b cell", case_sensitive=True)
+    assert len(res) == 3
+
+    res = search(df=df, string="b cell", case_sensitive=False)
+    assert res.name == "B cell"
+
+
+def test_search_return_none(df):
+    import pandas as pd
+
+    res = search(df=pd.DataFrame([], columns=["name"]), string="")
+    assert res is None
