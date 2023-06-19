@@ -28,7 +28,7 @@ def search(
     """
     import pandas as pd
 
-    from ._map_synonyms import explode_aggregated_column_to_expand
+    from ._map_synonyms import explode_aggregated_column_to_map
 
     def _fuzz_ratio(string: str, iterable: pd.Series, case_sensitive: bool = True):
         from rapidfuzz import fuzz, utils
@@ -40,7 +40,7 @@ def search(
         return iterable.apply(lambda x: fuzz.ratio(string, x, processor=processor))
 
     if (synonyms_field in df.columns) and (synonyms_field != field):
-        df_exp = explode_aggregated_column_to_expand(
+        df_exp = explode_aggregated_column_to_map(
             df,
             aggregated_col=synonyms_field,  # type:ignore
             target_col=field,
