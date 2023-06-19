@@ -84,6 +84,18 @@ def test_map_synonyms_empty_values(genes):
     assert mapper == {"FANCD1": "BRCA2"}
 
 
+def test_map_synonyms_keep(genes):
+    _, df = genes
+
+    assert map_synonyms(
+        df, identifiers=["GCS", "A1CF"], field="symbol", keep=False
+    ) == [["GCLC", "UGCG"], "A1CF"]
+
+    assert map_synonyms(
+        df, identifiers=["GCS", "A1CF"], field="symbol", keep=False, return_mapper=True
+    ) == {"GCS": ["GCLC", "UGCG"]}
+
+
 def test_unsupported_field(genes):
     gene_symbols, df = genes
     with pytest.raises(KeyError):

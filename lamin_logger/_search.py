@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any, Literal, Union
 
 from lamin_logger import logger
 
@@ -11,6 +11,7 @@ def search(
     case_sensitive: bool = True,
     return_ranked_results: bool = False,
     synonyms_sep: str = "|",
+    keep: Literal["first", "last", False] = "first",
     tuple_name: str = "SearchResult",
 ) -> Any:
     """Search a given string against a field.
@@ -36,13 +37,17 @@ def search(
         processor = None if case_sensitive else utils.default_process
         return iterable.apply(lambda x: fuzz.ratio(string, x, processor=processor))
 
+    # search against each of the synonyms
     if (synonyms_field in df.columns) and (synonyms_field != field):
         mapper = explode_aggregated_column_to_map(
             df,
             aggregated_col=synonyms_field,  # type:ignore
             target_col=field,
+            keep=keep,
             sep=synonyms_sep,
         )
+        if keep is False:
+            mapper = mapper.explode()
         for v in df[field]:
             if v not in mapper:
                 mapper.loc[v] = v
@@ -56,6 +61,7 @@ def search(
         df_exp = df.copy()
         target_column = field
 
+    # add matching scores as a __ratio__ column
     df_exp["__ratio__"] = _fuzz_ratio(
         string=string, iterable=df_exp[target_column], case_sensitive=case_sensitive
     )

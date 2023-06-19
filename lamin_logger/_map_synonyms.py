@@ -1,5 +1,7 @@
 from typing import Any, Dict, Iterable, List, Literal, Union
 
+from ._logger import logger
+
 
 def map_synonyms(
     df: Any,
@@ -71,10 +73,24 @@ def map_synonyms(
 
     if return_mapper:
         # only returns mapped synonyms
-        return mapped[~mapped.isna()].to_dict()
+        mapper = mapped[~mapped.isna()].to_dict()
+        if keep is False:
+            logger.warning(
+                "Retuning mapper might contain lists as values when 'keep=False'"
+            )
+            return {k: v[0] if len(v) == 1 else v for k, v in mapper.items()}
+        else:
+            return mapper
     else:
         # returns a list in the input order with synonyms replaced
-        return mapped.fillna(mapped_df.index.to_series()).tolist()
+        mapped_list = mapped.fillna(mapped_df.index.to_series()).tolist()
+        if keep is False:
+            logger.warning("Returning list might contain lists when 'keep=False'")
+            return [
+                v[0] if isinstance(v, list) and len(v) == 1 else v for v in mapped_list
+            ]
+        else:
+            return mapped_list
 
 
 def to_str(identifiers: Any, case_sensitive: bool = False):
