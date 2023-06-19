@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Union
+from typing import Any, Dict, Iterable, List, Literal, Union
 
 
 def map_synonyms(
@@ -6,22 +6,36 @@ def map_synonyms(
     identifiers: Iterable,
     field: str,
     *,
+    case_sensitive: bool = False,
+    return_mapper: bool = False,
     synonyms_field: str = "synonyms",
     sep: str = "|",
-    return_mapper: bool = False,
+    keep: Literal["first", "last", False] = "first",
 ) -> Union[Dict[str, str], List[str]]:
     """Maps input identifiers against a concatenated synonyms column.
 
     Args:
-        identifiers: Identifiers that will be mapped against an field.
+        df: Reference DataFrame.
+        identifiers: Identifiers that will be mapped against a field.
+        return_mapper: If True, returns {input synonyms : standardized field name}.
+        case_sensitive: Whether the mapping is case sensitive.
+        keep : {'first', 'last', False}, default 'first'
+            When a synonym maps to multiple standardized values, determines
+            which duplicates to mark as `pandas.DataFrame.duplicated`
+            - "first": returns the first mapped standardized value
+            - "last": returns the last mapped standardized value
+            - False: returns all mapped standardized value
+        synonyms_field: The field representing the concatenated synonyms.
+        synonyms_sep: Which separator is used to separate synonyms.
         field: The field representing the identifiers.
-        return_mapper: If True, returns {identifiers : <mapped field values>}.
 
     Returns:
-        - A list of mapped field values if return_mapper is False.
-        - A dictionary of mapped values with mappable identifiers as keys
-            and values mapped to field as values if return_mapper is True.
+        - If return_mapper is False: a list of mapped field values.
+        - If return_mapper is True: a dictionary of mapped values with mappable
+            identifiers as keys and values mapped to field as values.
     """
+    import pandas as pd
+
     if field not in df.columns:
         raise KeyError(
             f"field '{field}' is invalid! Available fields are: {list(df.columns)}"
@@ -34,83 +48,108 @@ def map_synonyms(
     if field == synonyms_field:
         raise KeyError("synonyms_field must be different from field!")
 
-    alias_map = explode_aggregated_column_to_expand(
+    # {synonym: name}
+    syn_map = explode_aggregated_column_to_map(
         df=df,
-        aggregated_col=synonyms_field,
+        agg_col=synonyms_field,
         target_col=field,
+        keep=keep,
         sep=sep,
-    )[field]
-
-    if return_mapper:
-        mapped_dict = {
-            item: alias_map.get(item)
-            for item in identifiers
-            if alias_map.get(item) is not None and alias_map.get(item) != item
-        }
-        return mapped_dict
-    else:
-        mapped_list = [alias_map.get(item, item) for item in identifiers]
-        return mapped_list
-
-
-def explode_aggregated_column_to_expand(
-    df: Any,
-    aggregated_col: str,
-    target_col=None,
-    sep: str = "|",
-) -> Any:
-    """Explode values from an aggregated DataFrame column to expand a target column.
-
-    Args:
-        df: A DataFrame containing the aggregated_col and target_col.
-        aggregated_col: The name of the aggregated column
-        target_col: the name of the target column
-                    If None, use the index as the target column
-        sep: Splits all values of the aggregated_col by this separator.
-
-    Returns:
-        a DataFrame index by the split values from the aggregated column;
-        the target column is aggregated so that the new index is unique.
-    """
-    import pandas as pd
-
-    if target_col is None:
-        # take the index as the target column
-        if df.index.name is None:
-            target_col = df.index.name = "index"
-        else:
-            target_col = df.index.name
-    if aggregated_col == target_col:
-        raise AssertionError("synonyms and target column can't be the same!")
-    try:
-        df = df.reset_index()[[aggregated_col, target_col]].copy()
-    except KeyError:
-        raise KeyError(f"{aggregated_col} field is not found!")
-
-    # explode the values from the aggregated cells into new rows
-    df[aggregated_col] = df[aggregated_col].str.split(sep)
-    exploded_df = df.explode(aggregated_col)
-
-    # if any values in the aggregated column is already in the target col
-    # sets those values of the aggregated column to None
-    exploded_df.loc[
-        exploded_df[aggregated_col].isin(exploded_df[target_col]), aggregated_col
-    ] = None
-
-    # set the values aggregated_col equal the target_col if None before concat
-    exploded_df[aggregated_col] = exploded_df[aggregated_col].fillna(
-        exploded_df[target_col]
     )
 
-    # append the additional values in the target column to the df
-    add_values = exploded_df[
-        ~exploded_df[target_col].isin(exploded_df[aggregated_col])
-    ][target_col].unique()
-    add_df = pd.DataFrame(data={target_col: add_values, aggregated_col: add_values})
+    # A DataFrame indexed by the passed identifiers
+    mapped_df = pd.DataFrame(index=identifiers)
+    # _field is a column if identifiers based on case_sensitive
+    mapped_df["_field"] = to_str(mapped_df.index, case_sensitive=case_sensitive)
+    if not case_sensitive:
+        # convert the synonyms to the same case_sensitive
+        syn_map.index = syn_map.index.str.lower()
+        # TODO: allow returning duplicated entries
+        syn_map = syn_map[syn_map.index.drop_duplicates()]
+    # mapped synonyms will have values, otherwise NAs
+    mapped = mapped_df["_field"].map(syn_map.to_dict())
 
-    # aggregate the target column so that the new index (aggregated column) is unique
-    df_concat = pd.concat([exploded_df, add_df])
-    df_concat = df_concat.astype(str)
-    df_concat = df_concat.groupby(aggregated_col).agg(sep.join)
+    if return_mapper:
+        # only returns mapped synonyms
+        return mapped[~mapped.isna()].to_dict()
+    else:
+        # returns a list in the input order with synonyms replaced
+        return mapped.fillna(mapped_df.index.to_series()).tolist()
 
-    return df_concat[df_concat.index != ""]
+
+def to_str(identifiers: Any, case_sensitive: bool = False):
+    """Convert a pandas series values to strings with case sensitive option."""
+    values = identifiers.fillna("")
+    if case_sensitive is False:
+        values = values.str.lower()
+    return values
+
+
+def check_if_ids_in_field_values(
+    identifiers: Iterable, field_values: Iterable, case_sensitive: bool = False
+) -> Any:
+    """Check if an iterable is in a list of values with case sensitive option."""
+    import pandas as pd
+
+    mapped_df = pd.DataFrame(index=identifiers)
+    mapped_df.index = to_str(mapped_df.index, case_sensitive=case_sensitive)
+
+    field_values = to_str(field_values, case_sensitive=case_sensitive)
+
+    # annotated what complies with the default ID
+    matches = mapped_df.index.isin(field_values)
+    mapped_df["__mapped__"] = matches
+
+    # make sure to convert back to the original identifiers
+    mapped_df.index = identifiers
+    return mapped_df
+
+
+def not_empty_none_na(values: Iterable):
+    """Return values that are not empty string, None or NA."""
+    import pandas as pd
+
+    if not isinstance(values, (pd.Series, pd.Index)):
+        values = pd.Series(values)
+
+    return values[pd.Series(values).fillna("").astype(bool)]
+
+
+def explode_aggregated_column_to_map(
+    df,
+    agg_col: str,
+    target_col=str,
+    keep: Literal["first", "last", False] = "first",
+    sep: str = "|",
+):
+    """Explode values from an aggregated DataFrame column to map to a target column.
+
+    Args:
+        df: A DataFrame containing the agg_col and target_col.
+        agg_col: The name of the aggregated column
+        target_col: the name of the target column
+                    If None, use the index as the target column
+        keep : {'first', 'last', False}, default 'first'
+            Determines which duplicates to mark as `pandas.DataFrame.duplicated`
+        sep: Splits all values of the agg_col by this separator.
+
+    Returns:
+        a pandas.Series index by the split values from the aggregated column
+    """
+    df = df[[target_col, agg_col]].drop_duplicates()
+    # subset to df with only non-empty strings in the agg_col
+    df = df.loc[not_empty_none_na(df[agg_col]).index]
+
+    df[agg_col] = df[agg_col].str.split(sep)
+    df_explode = df.explode(agg_col)
+    # remove rows with same values in agg_col and target_col
+    df_explode = df_explode[df_explode[agg_col] != df_explode[target_col]]
+
+    # group by the agg_col and return based on keep for the target_col values
+    gb = df_explode.groupby(agg_col)[target_col]
+    if keep == "first":
+        return gb.first()
+    elif keep == "last":
+        return gb.last()
+    elif keep is False:
+        return gb.apply(list)

@@ -1,13 +1,19 @@
 import pytest
 
-from lamin_logger._map_synonyms import explode_aggregated_column_to_expand, map_synonyms
+from lamin_logger._map_synonyms import (
+    check_if_ids_in_field_values,
+    explode_aggregated_column_to_map,
+    map_synonyms,
+    not_empty_none_na,
+    to_str,
+)
 
 
 @pytest.fixture(scope="module")
 def genes():
     import pandas as pd
 
-    gene_symbols = ["A1CF", "A1BG", "FANCD1", "FANCD20"]
+    gene_symbols = ["A1CF", "A1BG", "FANCD1", "FANCD20", "GCS"]
 
     records = [
         {
@@ -27,12 +33,12 @@ def genes():
             "synonyms": "ACF|ACF64|APOBEC1CF|ACF65|ASP",
         },
         {
-            "symbol": "PDCD1",
-            "synonyms": "hSLE1|PD-1|PD1|SLEB2|CD279",
+            "symbol": "GCLC",
+            "synonyms": "GCS",
         },
         {
-            "symbol": "PDCD1",
-            "synonyms": "hSLE1|PD-1|PD1|SLEB2|CD279",
+            "symbol": "UGCG",
+            "synonyms": "GCS",
         },
     ]
 
@@ -44,11 +50,8 @@ def genes():
 def test_map_synonyms(genes):
     gene_symbols, df = genes
 
-    mapping = map_synonyms(
-        df=df, identifiers=gene_symbols, field="symbol", return_mapper=False
-    )
-    expected_synonym_mapping = ["A1CF", "A1BG", "BRCA2", "FANCD20"]
-    assert mapping == expected_synonym_mapping
+    mapping = map_synonyms(df=df, identifiers=gene_symbols, field="symbol")
+    assert mapping == ["A1CF", "A1BG", "BRCA2", "FANCD20", "GCLC"]
 
 
 def test_map_synonyms_return_mapper(genes):
@@ -58,7 +61,7 @@ def test_map_synonyms_return_mapper(genes):
         df=df, identifiers=gene_symbols, field="symbol", return_mapper=True
     )
 
-    assert mapper == {"FANCD1": "BRCA2"}
+    assert mapper == {"FANCD1": "BRCA2", "GCS": "GCLC"}
 
 
 def test_map_synonyms_empty_values(genes):
@@ -103,30 +106,71 @@ def test_unsupported_field(genes):
         )
 
 
-def test_explode_aggregated_column_to_expand(genes):
+def test_to_str():
+    import numpy as np
+    import pandas as pd
+
+    assert to_str(pd.Index(["A", "a", None, np.nan])).tolist() == ["a", "a", "", ""]
+    assert to_str(pd.Series(["A", "a", None, np.nan])).tolist() == ["a", "a", "", ""]
+    assert to_str(
+        pd.Series(["A", "a", None, np.nan]), case_sensitive=True
+    ).tolist() == ["A", "a", "", ""]
+
+
+def test_check_if_ids_in_field_values(genes):
     _, df = genes
-    with pytest.raises(AssertionError):
-        explode_aggregated_column_to_expand(
-            df=df, aggregated_col="synonyms", target_col="synonyms"
-        )
+    assert check_if_ids_in_field_values(
+        identifiers=["A1CF", "a1cf"], field_values=df["symbol"]
+    )["__mapped__"].tolist() == [True, True]
+    assert check_if_ids_in_field_values(
+        identifiers=["A1CF", "a1cf"], field_values=df["symbol"], case_sensitive=True
+    )["__mapped__"].tolist() == [True, False]
+    assert check_if_ids_in_field_values(
+        identifiers=df["symbol"], field_values=df["symbol"]
+    )["__mapped__"].tolist() == [True, True, True, True, True, True]
 
-    res = explode_aggregated_column_to_expand(
-        df=df, aggregated_col="synonyms", target_col="symbol"
+
+def test_not_empty_none_na():
+    import numpy as np
+    import pandas as pd
+
+    assert not_empty_none_na(["a", None, "", np.nan]).loc[0] == "a"
+    assert not_empty_none_na(pd.Index(["a", None, "", np.nan])).tolist() == ["a"]
+    assert not_empty_none_na(
+        pd.Series(["a", None, "", np.nan], index=["1", "2", "3", "4"])
+    ).to_dict() == {"1": "a"}
+
+
+def test_explode_aggregated_column_to_map(genes):
+    _, df = genes
+    assert explode_aggregated_column_to_map(
+        df, agg_col="synonyms", target_col="symbol"
+    ).to_dict() == {
+        "ACF": "A1CF",
+        "ACF64": "A1CF",
+        "ACF65": "A1CF",
+        "APOBEC1CF": "A1CF",
+        "ASP": "A1CF",
+        "BRCC1": "BRCA1",
+        "BRCC2": "BRCA2",
+        "FACD": "BRCA2",
+        "FAD": "BRCA2",
+        "FAD1": "BRCA2",
+        "FANCD": "BRCA2",
+        "FANCD1": "BRCA2",
+        "FANCS": "BRCA1",
+        "GCS": "GCLC",
+        "PPP1R53": "BRCA1",
+        "RNF53": "BRCA1",
+        "XRCC11": "BRCA2",
+    }
+
+    assert (
+        explode_aggregated_column_to_map(
+            df, agg_col="synonyms", target_col="symbol", keep="last"
+        ).get("GCS")
+        == "UGCG"
     )
-    assert res.index.name == "synonyms"
-    assert res.shape == (26, 1)
-
-    with pytest.raises(KeyError):
-        explode_aggregated_column_to_expand(df=df, aggregated_col="name")
-
-    res = explode_aggregated_column_to_expand(
-        df=df, aggregated_col="synonyms", target_col=None
-    )
-    assert "index" in res.columns
-    assert df.index.name == "index"
-
-    df.index.name = "index-name"
-    res = explode_aggregated_column_to_expand(
-        df=df, aggregated_col="synonyms", target_col=None
-    )
-    assert "index-name" in res.columns
+    assert explode_aggregated_column_to_map(
+        df, agg_col="synonyms", target_col="symbol", keep=False
+    ).get("GCS") == ["GCLC", "UGCG"]
