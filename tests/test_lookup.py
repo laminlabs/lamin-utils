@@ -45,3 +45,7 @@ def test_lookup():
 
     assert lookup.__class__.__name__ == "Lookup"
     assert lookup.prefix_1_sample.__class__.__name__ == "TestTuple"
+
+
+def test_lookup_empty_df():
+    assert Lookup(df=pd.DataFrame(columns=["name"]), field="name").lookup().dict() == {}

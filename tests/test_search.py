@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 from lamin_logger._search import search
@@ -5,8 +6,6 @@ from lamin_logger._search import search
 
 @pytest.fixture(scope="module")
 def df():
-    import pandas as pd
-
     records = [
         {
             "ontology_id": "CL:0000084",
@@ -83,7 +82,12 @@ def test_search_case_sensitive(df):
 
 
 def test_search_return_none(df):
-    import pandas as pd
-
     res = search(df=pd.DataFrame([], columns=["name"]), string="")
     assert res is None
+
+
+def test_search_empty_df():
+    res = search(
+        pd.DataFrame(columns=["a", "b", "c"]), string="", return_ranked_results=True
+    )
+    assert res.shape == (0, 3)

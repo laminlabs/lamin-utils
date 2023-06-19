@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 from lamin_logger._map_synonyms import (
@@ -11,8 +12,6 @@ from lamin_logger._map_synonyms import (
 
 @pytest.fixture(scope="module")
 def genes():
-    import pandas as pd
-
     gene_symbols = ["A1CF", "A1BG", "FANCD1", "FANCD20", "GCS"]
 
     records = [
@@ -120,7 +119,6 @@ def test_unsupported_field(genes):
 
 def test_to_str():
     import numpy as np
-    import pandas as pd
 
     assert to_str(pd.Index(["A", "a", None, np.nan])).tolist() == ["a", "a", "", ""]
     assert to_str(pd.Series(["A", "a", None, np.nan])).tolist() == ["a", "a", "", ""]
@@ -144,7 +142,6 @@ def test_check_if_ids_in_field_values(genes):
 
 def test_not_empty_none_na():
     import numpy as np
-    import pandas as pd
 
     assert not_empty_none_na(["a", None, "", np.nan]).loc[0] == "a"
     assert not_empty_none_na(pd.Index(["a", None, "", np.nan])).tolist() == ["a"]
@@ -186,3 +183,13 @@ def test_explode_aggregated_column_to_map(genes):
     assert explode_aggregated_column_to_map(
         df, agg_col="synonyms", target_col="symbol", keep=False
     ).get("GCS") == ["GCLC", "UGCG"]
+
+
+def test_map_synonyms_empty_df():
+    assert (
+        map_synonyms(
+            df=pd.DataFrame(), identifiers=[], field="name", return_mapper=True
+        )
+        == {}
+    )
+    assert map_synonyms(df=pd.DataFrame(), identifiers=[], field="name") == []

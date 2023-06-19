@@ -38,6 +38,13 @@ def map_synonyms(
     """
     import pandas as pd
 
+    # empty DataFrame
+    if df.shape[0] == 0:
+        if return_mapper:
+            return {}
+        else:
+            return list(identifiers)
+
     if field not in df.columns:
         raise KeyError(
             f"field '{field}' is invalid! Available fields are: {list(df.columns)}"

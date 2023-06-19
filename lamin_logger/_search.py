@@ -37,6 +37,13 @@ def search(
         processor = None if case_sensitive else utils.default_process
         return iterable.apply(lambda x: fuzz.ratio(string, x, processor=processor))
 
+    # empty DataFrame
+    if df.shape[0] == 0:
+        if return_ranked_results:
+            return df
+        else:
+            return None
+
     # search against each of the synonyms
     if (synonyms_field in df.columns) and (synonyms_field != field):
         mapper = explode_aggregated_column_to_map(
