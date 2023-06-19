@@ -41,7 +41,7 @@ def search(
     if (synonyms_field in df.columns) and (synonyms_field != field):
         mapper = explode_aggregated_column_to_map(
             df,
-            aggregated_col=synonyms_field,  # type:ignore
+            agg_col=synonyms_field,  # type:ignore
             target_col=field,
             keep=keep,
             sep=synonyms_sep,
