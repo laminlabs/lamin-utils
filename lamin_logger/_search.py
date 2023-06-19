@@ -87,7 +87,5 @@ def search(
         res_records = list(res.reset_index().itertuples(index=False, name=tuple_name))
         if len(res_records) == 1:
             return res_records[0]
-        elif len(res_records) > 1:
-            return res_records
         else:
-            return None
+            return res_records

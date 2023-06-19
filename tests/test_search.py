@@ -81,13 +81,11 @@ def test_search_case_sensitive(df):
     assert res.name == "B cell"
 
 
-def test_search_return_none(df):
-    res = search(df=pd.DataFrame([], columns=["name"]), string="")
-    assert res is None
-
-
 def test_search_empty_df():
     res = search(
         pd.DataFrame(columns=["a", "b", "c"]), string="", return_ranked_results=True
     )
     assert res.shape == (0, 3)
+
+    res = search(pd.DataFrame(columns=["a", "b", "c"]), string="")
+    assert res is None
