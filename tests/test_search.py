@@ -54,7 +54,7 @@ def test_search_synonyms(df):
 
 
 def test_search_keep(df):
-    res = search(df=df, synonyms_field=None, string="P cells", keep=False)
+    res = search(df=df, string="enteroendocrine", keep=False)
     assert res.name == "PP cell"
 
 
