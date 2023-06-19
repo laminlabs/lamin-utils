@@ -33,19 +33,20 @@ def search(
     def _fuzz_ratio(string: str, iterable: pd.Series, case_sensitive: bool = True):
         from rapidfuzz import fuzz, utils
 
-        if case_sensitive:
-            processor = None
-        else:
-            processor = utils.default_process
+        processor = None if case_sensitive else utils.default_process
         return iterable.apply(lambda x: fuzz.ratio(string, x, processor=processor))
 
     if (synonyms_field in df.columns) and (synonyms_field != field):
-        df_exp = explode_aggregated_column_to_map(
+        mapper = explode_aggregated_column_to_map(
             df,
             aggregated_col=synonyms_field,  # type:ignore
             target_col=field,
             sep=synonyms_sep,
-        ).reset_index()
+        )
+        for v in df[field]:
+            if v not in mapper:
+                mapper.loc[v] = v
+        df_exp = mapper.reset_index()
         target_column = synonyms_field
     else:
         if synonyms_field == field:
