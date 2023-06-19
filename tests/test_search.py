@@ -53,6 +53,11 @@ def test_search_synonyms(df):
     assert res.name == "PP cell"
 
 
+def test_search_keep(df):
+    res = search(df=df, synonyms_field=None, string="P cells", keep=False)
+    assert res.name == "PP cell"
+
+
 def test_search_return_df(df):
     res = search(df=df, string="P cells", return_ranked_results=True)
     assert res.shape == (4, 4)
