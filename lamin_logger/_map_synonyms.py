@@ -57,6 +57,9 @@ def map_synonyms(
     if field == synonyms_field:
         raise KeyError("synonyms_field must be different from field!")
 
+    # only map synonyms for those ids that don't match the field column
+    df = df[~df[field].isin(identifiers)]
+
     # {synonym: name}
     syn_map = explode_aggregated_column_to_map(
         df=df,
