@@ -16,6 +16,8 @@ def map_synonyms(
 ) -> Union[Dict[str, str], List[str]]:
     """Maps input identifiers against a concatenated synonyms column.
 
+    Will also standardize casing.
+
     Args:
         df: Reference DataFrame.
         identifiers: Identifiers that will be mapped against a field.

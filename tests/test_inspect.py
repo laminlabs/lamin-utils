@@ -59,6 +59,27 @@ def test_inspect_iterable(genes):
     }
 
 
+def test_inspect_inspect_synonyms(genes):
+    df, data = genes
+
+    mapping = inspect(df=df, identifiers=data["gene symbol"], field="symbol")
+    assert mapping == {
+        "mapped": ["A1CF", "A1BG"],
+        "not_mapped": ["FANCD1", "corrupted"],
+    }
+
+    mapping = inspect(
+        df=df, identifiers=data["gene symbol"], field="symbol", inspect_synonyms=False
+    )
+    assert mapping == {
+        "mapped": ["A1CF", "A1BG"],
+        "not_mapped": ["FANCD1", "corrupted"],
+    }
+
+    df = df.drop(columns=["synonyms"])
+    mapping = inspect(df=df, identifiers=data["gene symbol"], field="symbol")
+
+
 def test_inspect_return_df(genes):
     df, data = genes
 
@@ -91,3 +112,16 @@ def test_inspect_case_sensitive(genes):
         df=df, identifiers=["A1CF", "A1BG", "a1cf"], field="symbol", case_sensitive=True
     )
     assert mapping == {"mapped": ["A1CF", "A1BG"], "not_mapped": ["a1cf"]}
+
+
+def test_inspect_empty_dup_input(genes):
+    import numpy as np
+
+    df, _ = genes
+
+    mapping = inspect(
+        df=df,
+        identifiers=pd.Series(["A1CF", "A1BG", "A1BG", "", None, np.nan]),
+        field="symbol",
+    )
+    assert mapping == {"mapped": ["A1CF", "A1BG"], "not_mapped": []}

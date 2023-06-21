@@ -63,12 +63,9 @@ def inspect(
         except Exception:
             pass
 
-    n_uniq_mapped = len(mapped)
-    n_uniq_unmapped = len(unmapped)
     n_unique_terms = len(mapped) + len(unmapped)
-    n_matches = mapped_df["__mapped__"].sum()
-    n_empty = n_matches - n_unique_terms
-    frac_unmapped = round(n_uniq_unmapped / n_matches * 100, 1)
+    n_empty = len(list(identifiers)) - n_unique_terms
+    frac_unmapped = round(len(unmapped) / n_unique_terms * 100, 1)
     frac_mapped = 100 - frac_unmapped
 
     if logging:
@@ -77,8 +74,8 @@ def inspect(
                 f"Received {n_unique_terms} unique terms, {n_empty} empty/duplicated"
                 " terms are ignored."
             )
-        logger.success(f"{n_uniq_mapped} terms ({frac_mapped}%) are mapped.")
-        logger.warning(f"{n_uniq_unmapped} terms ({frac_unmapped}%) are not mapped.")
+        logger.success(f"{len(mapped)} terms ({frac_mapped}%) are mapped.")
+        logger.warning(f"{len(unmapped)} terms ({frac_unmapped}%) are not mapped.")
 
     if return_df:
         return mapped_df
