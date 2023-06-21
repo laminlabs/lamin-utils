@@ -55,7 +55,7 @@ def test_inspect_iterable(genes):
     mapping = inspect(df=df, identifiers=data["hgnc id"], field="hgnc_id")
     assert mapping == {
         "mapped": ["HGNC:24086", "HGNC:5", "HGNC:1101"],
-        "unmapped": ["corrupted"],
+        "not_mapped": ["corrupted"],
     }
 
 
