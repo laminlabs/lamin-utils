@@ -38,6 +38,17 @@ def inspect(
         field_values=df[field],
         case_sensitive=case_sensitive,
     )
+    if case_sensitive is False:
+        mapped_df_cs = check_if_ids_in_field_values(
+            identifiers=identifiers,
+            field_values=df[field],
+            case_sensitive=True,
+        )
+        if mapped_df_cs["__mapped__"].sum() < mapped_df["__mapped__"].sum():
+            logger.warning(
+                "Detected inconsistent casing of mapped terms!\n   For best practice,"
+                " standardize casing via '.map_synonyms()'"
+            )
 
     def unique_rm_empty(idx: pd.Index):
         idx = idx.unique()
