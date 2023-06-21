@@ -21,19 +21,19 @@ def genes():
     records = [
         {
             "symbol": "A1BG",
-            "hgnc id": "HGNC:5",
+            "hgnc_id": "HGNC:5",
             "ensembl_gene_id": "ENSG00000121410",
             "synonyms": "",
         },
         {
             "symbol": "BRCA2",
-            "hgnc id": "HGNC:1101",
+            "hgnc_id": "HGNC:1101",
             "ensembl_gene_id": "ENSG00000188389",
             "synonyms": "FAD|FAD1|BRCC2|FANCD1|FACD|FANCD|XRCC11",
         },
         {
             "symbol": "A1CF",
-            "hgnc id": "HGNC:24086",
+            "hgnc_id": "HGNC:24086",
             "ensembl_gene_id": "ENSG00000148584",
             "synonyms": "ACF|ACF64|APOBEC1CF|ACF65|ASP",
         },
