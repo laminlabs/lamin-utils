@@ -137,7 +137,7 @@ def test_inspect_empty_df():
         field="symbol",
     )
 
-    assert mapping == {"mapped": [], "not_mapped": ["A1CF", "A1BG", "A1BG"]}
+    assert mapping == {"mapped": [], "not_mapped": ["A1CF", "A1BG"]}
 
     mapping = inspect(
         df=pd.DataFrame(),

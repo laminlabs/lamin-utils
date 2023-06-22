@@ -77,7 +77,7 @@ def test_map_synonyms_case_sensitive(genes):
         field="symbol",
         case_sensitive=True,
     )
-    assert mapping == ["A1CF", "BRCA2"]
+    assert mapping == ["A1CF", "BRCA2", "a1CF", "fancd1"]
 
 
 def test_map_synonyms_empty_values(genes):
