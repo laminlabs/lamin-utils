@@ -125,3 +125,32 @@ def test_inspect_empty_dup_input(genes):
         field="symbol",
     )
     assert mapping == {"mapped": ["A1CF", "A1BG"], "not_mapped": []}
+
+
+def test_inspect_empty_df():
+    import numpy as np
+    import pandas as pd
+
+    mapping = inspect(
+        df=pd.DataFrame(),
+        identifiers=pd.Series(["A1CF", "A1BG", "A1BG", "", None, np.nan]),
+        field="symbol",
+    )
+
+    assert mapping == {"mapped": [], "not_mapped": ["A1CF", "A1BG", "A1BG"]}
+
+    mapping = inspect(
+        df=pd.DataFrame(),
+        identifiers=pd.Series(["A1CF", "A1BG", "A1BG", "", None, np.nan]),
+        field="symbol",
+        return_df=True,
+    )
+
+    expected_df = pd.DataFrame(
+        index=["A1CF", "A1BG", "A1BG", "", None, np.nan],
+        data={
+            "__mapped__": [False, False, False, False, False],
+        },
+    )
+
+    assert mapping.equals(expected_df)
