@@ -149,7 +149,7 @@ def test_inspect_empty_df():
     expected_df = pd.DataFrame(
         index=["A1CF", "A1BG", "A1BG", "", None, np.nan],
         data={
-            "__mapped__": [False, False, False, False, False],
+            "__mapped__": [False, False, False, False, False, False],
         },
     )
 
