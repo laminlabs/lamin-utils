@@ -83,6 +83,7 @@ def map_synonyms(
         # TODO: allow returning duplicated entries
         syn_map = syn_map[syn_map.index.drop_duplicates()]
     # mapped synonyms will have values, otherwise NAs
+    mapped_df.index = mapped_df["orig_ids"]
     mapped = mapped_df["__agg__"].map({**field_map.to_dict(), **syn_map.to_dict()})
 
     if return_mapper:
