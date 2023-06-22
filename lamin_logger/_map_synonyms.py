@@ -65,26 +65,33 @@ def map_synonyms(
 
     # __agg__ is a column of identifiers based on case_sensitive
     df["__agg__"] = to_str(df[field], case_sensitive=case_sensitive)
-    field_map = pd.merge(mapped_df, df, on="__agg__").set_index("orig_ids")[field]
+    field_map = pd.merge(mapped_df, df, on="__agg__").set_index("__agg__")[field]
+    print(field_map)
 
-    # only map synonyms for those ids that don't match the field case insensitively
-    # {synonym: name}
-    syn_map = explode_aggregated_column_to_map(
-        df=df[~df["__agg__"].isin(mapped_df["__agg__"])],
-        agg_col=synonyms_field,
-        target_col=field,
-        keep=keep,
-        sep=sep,
-    )
+    # only runs if synonyms mapping is needed
+    if len(field_map) < mapped_df.shape[0]:
+        # only map synonyms for those ids that don't match the field case insensitively
+        # {synonym: name}
+        syn_map = explode_aggregated_column_to_map(
+            df=df[~df["__agg__"].isin(mapped_df["__agg__"])],
+            agg_col=synonyms_field,
+            target_col=field,
+            keep=keep,
+            sep=sep,
+        )
 
-    if not case_sensitive:
-        # convert the synonyms to the same case_sensitive
-        syn_map.index = syn_map.index.str.lower()
-        # TODO: allow returning duplicated entries
-        syn_map = syn_map[syn_map.index.drop_duplicates()]
+        if not case_sensitive:
+            # convert the synonyms to the same case_sensitive
+            syn_map.index = syn_map.index.str.lower()
+            # TODO: allow returning duplicated entries
+            syn_map = syn_map[syn_map.index.drop_duplicates()]
+        syn_map = syn_map.to_dict()
+    else:
+        syn_map = {}
+
     # mapped synonyms will have values, otherwise NAs
     mapped_df.index = mapped_df["orig_ids"]
-    mapped = mapped_df["__agg__"].map({**field_map.to_dict(), **syn_map.to_dict()})
+    mapped = mapped_df["__agg__"].map({**field_map.to_dict(), **syn_map})
 
     if return_mapper:
         # only returns mapped synonyms
