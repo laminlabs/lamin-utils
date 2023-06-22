@@ -36,14 +36,15 @@ def inspect(
         idx = idx.unique()
         return idx[(idx != "") & (~idx.isnull())]
 
-    # empty DataFrame
-    if df.shape[0] == 0:
+    uniq_identifiers = unique_rm_empty(pd.Index(identifiers)).tolist()
+    # empty DataFrame or input
+    if df.shape[0] == 0 or len(uniq_identifiers) == 0:
         if return_df:
             return pd.DataFrame(index=identifiers, data={"__mapped__": False})
         else:
             return {
                 "mapped": [],
-                "not_mapped": unique_rm_empty(pd.Index(identifiers)).tolist(),
+                "not_mapped": uniq_identifiers,
             }
 
     # check if index is compliant

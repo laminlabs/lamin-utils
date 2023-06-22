@@ -40,8 +40,8 @@ def map_synonyms(
     """
     import pandas as pd
 
-    # empty DataFrame
-    if df.shape[0] == 0:
+    # empty DataFrame or input
+    if df.shape[0] == 0 or len(list(identifiers)) == 0:
         if return_mapper:
             return {}
         else:
