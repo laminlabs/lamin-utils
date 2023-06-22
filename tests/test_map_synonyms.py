@@ -63,6 +63,23 @@ def test_map_synonyms_return_mapper(genes):
     assert mapper == {"FANCD1": "BRCA2", "GCS": "GCLC"}
 
 
+def test_map_synonyms_case_sensitive(genes):
+    _, df = genes
+
+    mapping = map_synonyms(
+        df=df, identifiers=["A1CF", "FANCD1", "a1CF", "fancd1"], field="symbol"
+    )
+    assert mapping == ["A1CF", "BRCA2", "A1CF", "BRCA2"]
+
+    mapping = map_synonyms(
+        df=df,
+        identifiers=["A1CF", "FANCD1", "a1CF", "fancd1"],
+        field="symbol",
+        case_sensitive=True,
+    )
+    assert mapping == ["A1CF", "BRCA2"]
+
+
 def test_map_synonyms_empty_values(genes):
     _, df = genes
 
@@ -95,7 +112,7 @@ def test_map_synonyms_keep(genes):
     ) == {"GCS": ["GCLC", "UGCG"]}
 
 
-def test_unsupported_field(genes):
+def test_map_synonyms_unsupported_field(genes):
     gene_symbols, df = genes
     with pytest.raises(KeyError):
         map_synonyms(df=df, identifiers=gene_symbols, field="name", return_mapper=False)
@@ -115,6 +132,16 @@ def test_unsupported_field(genes):
             synonyms_field="symbol",
             return_mapper=False,
         )
+
+
+def test_map_synonyms_empty_df():
+    assert (
+        map_synonyms(
+            df=pd.DataFrame(), identifiers=[], field="name", return_mapper=True
+        )
+        == {}
+    )
+    assert map_synonyms(df=pd.DataFrame(), identifiers=[], field="name") == []
 
 
 def test_to_str():
@@ -183,13 +210,3 @@ def test_explode_aggregated_column_to_map(genes):
     assert explode_aggregated_column_to_map(
         df, agg_col="synonyms", target_col="symbol", keep=False
     ).get("GCS") == ["GCLC", "UGCG"]
-
-
-def test_map_synonyms_empty_df():
-    assert (
-        map_synonyms(
-            df=pd.DataFrame(), identifiers=[], field="name", return_mapper=True
-        )
-        == {}
-    )
-    assert map_synonyms(df=pd.DataFrame(), identifiers=[], field="name") == []

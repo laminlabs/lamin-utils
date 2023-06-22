@@ -59,29 +59,31 @@ def map_synonyms(
     if field == synonyms_field:
         raise KeyError("synonyms_field must be different from field!")
 
-    # only map synonyms for those ids that don't match the field column
-    df = df[~df[field].isin(identifiers)]
+    # A DataFrame indexed by the passed identifiers
+    mapped_df = pd.DataFrame(data={"orig_ids": identifiers})
+    mapped_df["__agg__"] = to_str(mapped_df["orig_ids"], case_sensitive=case_sensitive)
 
+    # __agg__ is a column of identifiers based on case_sensitive
+    df["__agg__"] = to_str(df[field], case_sensitive=case_sensitive)
+    field_map = pd.merge(mapped_df, df, on="__agg__").set_index("orig_ids")[field]
+
+    # only map synonyms for those ids that don't match the field case insensitively
     # {synonym: name}
     syn_map = explode_aggregated_column_to_map(
-        df=df,
+        df=df[~df["__agg__"].isin(mapped_df["__agg__"])],
         agg_col=synonyms_field,
         target_col=field,
         keep=keep,
         sep=sep,
     )
 
-    # A DataFrame indexed by the passed identifiers
-    mapped_df = pd.DataFrame(index=identifiers)
-    # _field is a column if identifiers based on case_sensitive
-    mapped_df["_field"] = to_str(mapped_df.index, case_sensitive=case_sensitive)
     if not case_sensitive:
         # convert the synonyms to the same case_sensitive
         syn_map.index = syn_map.index.str.lower()
         # TODO: allow returning duplicated entries
         syn_map = syn_map[syn_map.index.drop_duplicates()]
     # mapped synonyms will have values, otherwise NAs
-    mapped = mapped_df["_field"].map(syn_map.to_dict())
+    mapped = mapped_df["__agg__"].map({**field_map.to_dict(), **syn_map.to_dict()})
 
     if return_mapper:
         # only returns mapped synonyms
@@ -95,7 +97,7 @@ def map_synonyms(
             return mapper
     else:
         # returns a list in the input order with synonyms replaced
-        mapped_list = mapped.fillna(mapped_df.index.to_series()).tolist()
+        mapped_list = mapped.fillna(mapped_df["orig_ids"]).tolist()
         if keep is False:
             logger.warning("Returning list might contain lists when 'keep=False'")
             return [
