@@ -44,8 +44,6 @@ def inspect(
             field_values=df[field],
             case_sensitive=True,
         )
-        print(mapped_df_cs["__mapped__"])
-        print(mapped_df["__mapped__"])
         if mapped_df_cs["__mapped__"].sum() < mapped_df["__mapped__"].sum():
             logger.warning(
                 "Detected inconsistent casing of mapped terms!\n   For best practice,"

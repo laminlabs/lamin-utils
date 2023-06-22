@@ -66,7 +66,6 @@ def map_synonyms(
     # __agg__ is a column of identifiers based on case_sensitive
     df["__agg__"] = to_str(df[field], case_sensitive=case_sensitive)
     field_map = pd.merge(mapped_df, df, on="__agg__").set_index("__agg__")[field]
-    print(field_map)
 
     # only runs if synonyms mapping is needed
     if len(field_map) < mapped_df.shape[0]:
@@ -96,6 +95,7 @@ def map_synonyms(
     if return_mapper:
         # only returns mapped synonyms
         mapper = mapped[~mapped.isna()].to_dict()
+        mapper = {k: v for k, v in mapper.items() if k != v}
         if keep is False:
             logger.warning(
                 "Retuning mapper might contain lists as values when 'keep=False'"
