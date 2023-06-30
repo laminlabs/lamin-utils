@@ -210,3 +210,12 @@ def test_explode_aggregated_column_to_map(genes):
     assert explode_aggregated_column_to_map(
         df, agg_col="synonyms", target_col="symbol", keep=False
     ).get("GCS") == ["GCLC", "UGCG"]
+
+
+def test_to_str_categorical_series():
+    import numpy as np
+
+    df = pd.DataFrame([np.nan, None, "a"])
+    df[0] = df[0].astype("category")
+
+    assert to_str(df[0]).tolist() == ["", "", "a"]
