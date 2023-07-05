@@ -119,7 +119,11 @@ def map_synonyms(
 def to_str(identifiers: Any, case_sensitive: bool = False):
     """Convert a pandas series values to strings with case sensitive option."""
     if identifiers.dtype.name == "category":
-        values = identifiers.cat.add_categories("").fillna("").astype(str)
+        if "" not in identifiers.cat.categories:
+            values = identifiers.cat.add_categories("")
+        else:
+            values = identifiers
+        values = values.fillna("").astype(str)
     else:
         values = identifiers.fillna("")
     if case_sensitive is False:
