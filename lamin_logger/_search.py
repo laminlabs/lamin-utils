@@ -75,9 +75,11 @@ def search(
     df_exp["__ratio__"] = _fuzz_ratio(
         string=string, iterable=df_exp[target_column], case_sensitive=case_sensitive
     )
+    # only keep the max score between field and synonyms for each entry
     df_exp_grouped = (
         df_exp.groupby(field).max().sort_values("__ratio__", ascending=False)
     )
+    # subset to original field values (as synonyms were mixed in before)
     df_exp_grouped = df_exp_grouped[df_exp_grouped.index.isin(df[field])]
     df_scored = df.set_index(field).loc[df_exp_grouped.index]
     df_scored["__ratio__"] = df_exp_grouped["__ratio__"]
