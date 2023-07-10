@@ -77,7 +77,7 @@ def search(
     )
     # only keep the max score between field and synonyms for each entry
     df_exp_grouped = (
-        df_exp.groupby(field).max().sort_values("__ratio__", ascending=False)
+        df_exp.groupby(field).max("__ratio__").sort_values("__ratio__", ascending=False)
     )
     # subset to original field values (as synonyms were mixed in before)
     df_exp_grouped = df_exp_grouped[df_exp_grouped.index.isin(df[field])]
