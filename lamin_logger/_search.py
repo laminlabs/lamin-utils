@@ -68,7 +68,7 @@ def search(
             logger.warning(
                 "Input field is the same as synonyms field, skipping synonyms matching"
             )
-        df_exp = df.copy()
+        df_exp = df[[field]].copy()
         target_column = field
 
     # add matching scores as a __ratio__ column
