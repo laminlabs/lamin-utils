@@ -46,6 +46,7 @@ def search(
 
     # search against each of the synonyms
     if (synonyms_field in df.columns) and (synonyms_field != field):
+        # creates field_value:synonym
         mapper = explode_aggregated_column_to_map(
             df,
             agg_col=synonyms_field,  # type:ignore
@@ -55,9 +56,11 @@ def search(
         )
         if keep is False:
             mapper = mapper.explode()
-        for v in df[field]:
-            if v not in mapper:
-                mapper.loc[v] = v
+        # adds field_value:field_value
+        df_field = pd.Series(df[field].values, index=df[field], name=field)
+        df_field.index.name = synonyms_field
+        df_field = df_field[df_field.index.difference(mapper.index)]
+        mapper = pd.concat([mapper, df_field])
         df_exp = mapper.reset_index()
         target_column = synonyms_field
     else:

@@ -182,7 +182,8 @@ def explode_aggregated_column_to_map(
     Returns:
         a pandas.Series index by the split values from the aggregated column
     """
-    df = df[[target_col, agg_col]].drop_duplicates()
+    df = df[[target_col, agg_col]].drop_duplicates().dropna(subset=[agg_col])
+
     # subset to df with only non-empty strings in the agg_col
     df = df.loc[not_empty_none_na(df[agg_col]).index]
 
