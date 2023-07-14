@@ -70,10 +70,9 @@ def map_synonyms(
     # only runs if synonyms mapping is needed
     # unique of field_map is needed here due to possible multiple matches of identifier
     if len(field_map.unique()) < mapped_df.shape[0]:
-        # only map synonyms for those ids that don't match the field case insensitively
         # {synonym: name}
         syn_map = explode_aggregated_column_to_map(
-            df=df[~df["__agg__"].isin(mapped_df["__agg__"])],
+            df=df,
             agg_col=synonyms_field,
             target_col=field,
             keep=keep,

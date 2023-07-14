@@ -53,6 +53,13 @@ def test_map_synonyms(genes):
     assert mapping == ["A1CF", "A1BG", "BRCA2", "FANCD20", "GCLC"]
 
 
+def test_map_synonyms_field_synonym(genes):
+    _, df = genes
+
+    mapping = map_synonyms(df=df, identifiers=["BRCA1", "BRCC1"], field="symbol")
+    assert mapping == ["BRCA1", "BRCA1"]
+
+
 def test_map_synonyms_return_mapper(genes):
     gene_symbols, df = genes
 
