@@ -1,4 +1,4 @@
-from typing import Any, Literal, Union
+from typing import Any, Literal, Optional, Union
 
 from lamin_logger import logger
 
@@ -7,12 +7,11 @@ def search(
     df: Any,
     string: str,
     field: str = "name",
+    limit: Optional[int] = None,
     synonyms_field: Union[str, None] = "synonyms",
-    case_sensitive: bool = True,
-    return_ranked_results: bool = False,
+    case_sensitive: bool = False,
     synonyms_sep: str = "|",
     keep: Literal["first", "last", False] = "first",
-    tuple_name: str = "SearchResult",
 ) -> Any:
     """Search a given string against a field.
 
@@ -22,27 +21,38 @@ def search(
         synonyms_field: Also map against in the synonyms
             If None, no mapping against synonyms.
         case_sensitive: Whether the match is case sensitive.
-        return_ranked_results: If True, return all entries ranked by matching ratios.
+        limit: maximum amount of top results to return.
+            If None, return all results.
 
     Returns:
-        Best match record of the input string.
+        A DataFrame of ranked results.
     """
     import pandas as pd
 
     from ._map_synonyms import explode_aggregated_column_to_map
 
-    def _fuzz_ratio(string: str, iterable: pd.Series, case_sensitive: bool = True):
-        from rapidfuzz import fuzz, utils
+    def _fuzz_ratio(
+        string: str,
+        iterable: pd.Series,
+        case_sensitive: bool = True,
+        limit: Optional[int] = None,
+    ):
+        from rapidfuzz import fuzz, process, utils
 
         processor = None if case_sensitive else utils.default_process
-        return iterable.apply(lambda x: fuzz.ratio(string, x, processor=processor))
+
+        results = process.extract(
+            string,
+            iterable,
+            scorer=fuzz.ratio,
+            limit=limit,
+            processor=processor,
+        )
+        return pd.DataFrame(results).set_index(2)[1]
 
     # empty DataFrame
     if df.shape[0] == 0:
-        if return_ranked_results:
-            return df
-        else:
-            return None
+        return df
 
     # search against each of the synonyms
     if (synonyms_field in df.columns) and (synonyms_field != field):
@@ -56,7 +66,7 @@ def search(
         )
         if keep is False:
             mapper = mapper.explode()
-        # adds field_value:field_value
+        # adds field_value:field_value to field_value:synonym
         df_field = pd.Series(df[field].values, index=df[field], name=field)
         df_field.index.name = synonyms_field
         df_field = df_field[df_field.index.difference(mapper.index)]
@@ -73,24 +83,21 @@ def search(
 
     # add matching scores as a __ratio__ column
     df_exp["__ratio__"] = _fuzz_ratio(
-        string=string, iterable=df_exp[target_column], case_sensitive=case_sensitive
+        string=string,
+        iterable=df_exp[target_column],
+        case_sensitive=case_sensitive,
+        limit=limit,
     )
+    if limit is not None:
+        df_exp = df_exp[~df_exp["__ratio__"].isna()]
     # only keep the max score between field and synonyms for each entry
-    df_exp_grouped = (
-        df_exp.groupby(field).max("__ratio__").sort_values("__ratio__", ascending=False)
-    )
-    # subset to original field values (as synonyms were mixed in before)
-    df_exp_grouped = df_exp_grouped[df_exp_grouped.index.isin(df[field])]
+    if target_column == synonyms_field:
+        df_exp_grouped = df_exp.groupby(field).max("__ratio__")
+        # subset to original field values (as synonyms were mixed in before)
+        df_exp_grouped = df_exp_grouped[df_exp_grouped.index.isin(df[field])]
+    else:
+        df_exp_grouped = df_exp.set_index(field)
     df_scored = df.set_index(field).loc[df_exp_grouped.index]
     df_scored["__ratio__"] = df_exp_grouped["__ratio__"]
 
-    if return_ranked_results:
-        return df_scored.sort_values("__ratio__", ascending=False)
-    else:
-        res = df_scored[df_scored["__ratio__"] == df_scored["__ratio__"].max()]
-        res = res.drop(columns=["__ratio__"])
-        res_records = list(res.reset_index().itertuples(index=False, name=tuple_name))
-        if len(res_records) == 1:
-            return res_records[0]
-        else:
-            return res_records
+    return df_scored.sort_values("__ratio__", ascending=False)

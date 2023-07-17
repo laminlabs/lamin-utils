@@ -35,57 +35,46 @@ def df():
     return pd.DataFrame.from_records(records)
 
 
-def test_search_name_default(df):
-    res = search(df=df, string="T cells", tuple_name="MyTuple")
-    assert res.name == "T cell"
-    assert res.ontology_id == "CL:0000084"
-    assert res.children == ["CL:0000798", "CL:0002420", "CL:0002419", "CL:0000789"]
-    assert res.synonyms == "T-cell|T lymphocyte|T-lymphocyte"
-    assert res.__class__.__name__ == "MyTuple"
-
-
 def test_search_synonyms(df):
     res = search(df=df, string="P cells")
-    assert res.name == "nodal myocyte"
+    assert res.index[0] == "nodal myocyte"
 
+    # without synonyms search
     res = search(df=df, synonyms_field=None, string="P cells")
-    assert res.name == "PP cell"
+    assert res.index[0] == "PP cell"
 
 
 def test_search_keep(df):
+    # TODO: better test here
     res = search(df=df, string="enteroendocrine", keep=False)
-    assert res.name == "PP cell"
+    assert res.index[0] == "PP cell"
 
 
 def test_search_return_df(df):
-    res = search(df=df, string="P cells", return_ranked_results=True)
+    res = search(df=df, string="P cells")
     assert res.shape == (4, 4)
     assert res.iloc[0].name == "nodal myocyte"
 
 
 def test_search_return_tie_results(df):
     res = search(df=df, string="A cell", synonyms_field=None)
-    assert len(res) == 2
+    assert res.iloc[0].__ratio__ == res.iloc[1].__ratio__
 
 
 def test_search_non_default_field(df):
     res = search(df=df, string="type F enteroendocrine", field="synonyms")
-    res.synonyms == "type F enteroendocrine cell"
+    assert res.index[0] == "type F enteroendocrine cell"
 
 
 def test_search_case_sensitive(df):
     res = search(df=df, string="b cell", case_sensitive=True)
-    assert len(res) == 3
+    assert res.iloc[0].__ratio__ < 100
 
     res = search(df=df, string="b cell", case_sensitive=False)
-    assert res.name == "B cell"
+    assert res.index[0] == "B cell"
+    assert res.iloc[0].__ratio__ == 100
 
 
 def test_search_empty_df():
-    res = search(
-        pd.DataFrame(columns=["a", "b", "c"]), string="", return_ranked_results=True
-    )
-    assert res.shape == (0, 3)
-
     res = search(pd.DataFrame(columns=["a", "b", "c"]), string="")
-    assert res is None
+    assert res.shape == (0, 3)
