@@ -44,6 +44,11 @@ def test_search_synonyms(df):
     assert res.index[0] == "PP cell"
 
 
+def test_search_limit(df):
+    res = search(df=df, string="P cells", limit=1)
+    assert res.shape[0] == 1
+
+
 def test_search_keep(df):
     # TODO: better test here
     res = search(df=df, string="enteroendocrine", keep=False)
