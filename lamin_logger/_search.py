@@ -48,7 +48,11 @@ def search(
             limit=limit,
             processor=processor,
         )
-        return pd.DataFrame(results).set_index(2)[1]
+        try:
+            return pd.DataFrame(results).set_index(2)[1]
+        except KeyError:
+            # no search results
+            return None
 
     # empty DataFrame
     if df.shape[0] == 0:
@@ -82,12 +86,16 @@ def search(
         target_column = field
 
     # add matching scores as a __ratio__ column
-    df_exp["__ratio__"] = _fuzz_ratio(
+    ratios = _fuzz_ratio(
         string=string,
         iterable=df_exp[target_column],
         case_sensitive=case_sensitive,
         limit=limit,
     )
+    if ratios is None:
+        return pd.DataFrame(columns=df.columns)
+    df_exp["__ratio__"] = ratios
+
     if limit is not None:
         df_exp = df_exp[~df_exp["__ratio__"].isna()]
     # only keep the max score between field and synonyms for each entry
