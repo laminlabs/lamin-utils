@@ -99,12 +99,10 @@ def search(
     if limit is not None:
         df_exp = df_exp[~df_exp["__ratio__"].isna()]
     # only keep the max score between field and synonyms for each entry
-    if target_column == synonyms_field:
-        df_exp_grouped = df_exp.groupby(field).max("__ratio__")
-        # subset to original field values (as synonyms were mixed in before)
-        df_exp_grouped = df_exp_grouped[df_exp_grouped.index.isin(df[field])]
-    else:
-        df_exp_grouped = df_exp.set_index(field)
+    # here groupby is also used to remove duplicates of field values
+    df_exp_grouped = df_exp.groupby(field).max("__ratio__")
+    # subset to original field values (as synonyms were mixed in before)
+    df_exp_grouped = df_exp_grouped[df_exp_grouped.index.isin(df[field])]
     df_scored = df.set_index(field).loc[df_exp_grouped.index]
     df_scored["__ratio__"] = df_exp_grouped["__ratio__"]
 
