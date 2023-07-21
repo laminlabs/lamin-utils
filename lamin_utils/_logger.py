@@ -69,6 +69,7 @@ class RootLogger(logging.RootLogger):
         super().__init__(level)
         self.propagate = False
         self._verbosity: int = 1
+        self.indent = ""
         RootLogger.manager = logging.Manager(self)
 
     def log(  # type: ignore
@@ -102,6 +103,7 @@ class RootLogger(logging.RootLogger):
             else None,
             "time_passed": time_passed,
         }
+        msg = f"{self.indent}{msg}"
         super().log(level, msg, extra=extra)
         return now
 
