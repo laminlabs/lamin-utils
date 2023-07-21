@@ -1,6 +1,6 @@
 from typing import Any, Literal, Optional, Union
 
-from lamin_logger import logger
+from lamin_utils import logger
 
 
 def search(
