@@ -13,4 +13,3 @@ def lint(session: nox.Session) -> None:
 def build(session):
     session.run(*"pip install -e .[dev]".split())
     laminci.nox.run_pytest(session)
-    laminci.nox.build_docs(session)
