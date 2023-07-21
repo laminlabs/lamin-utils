@@ -15,62 +15,25 @@ jobs:
         python-version: ["3.9"]
 
     steps:
-      - name: Checkout main
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Checkout lndocs
-        uses: actions/checkout@v3
-        with:
-          repository: laminlabs/lndocs
-          ssh-key: ${{ secrets.READ_LNDOCS }}
-          path: lndocs
-          ref: main
-      - name: Setup Python
-        uses: actions/setup-python@v3
+      - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Cache pre-commit
-        uses: actions/cache@v3
-        env:
-          cache-name: cache-all
+          cache: "pip"
+          cache-dependency-path: ".github/workflows/build.yml"
+      - uses: actions/cache@v3
         with:
           path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('.pre-commit-config.yaml') }}-${{ hashFiles('pyproject.yaml') }}
-      - name: Install pip and nox
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: install Python deps
         run: |
           python -m pip install --upgrade pip
-          pip install laminci
-      # - run: nox -s lint
+          pip install -U laminci
+      - run: nox -s lint
       - run: nox -s build
-      - name: Codecov
+      - uses: codecov/codecov-action@v2
         if: matrix.python-version == '3.9'
-        uses: codecov/codecov-action@v2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-      - name: Read lamin-project.yaml
-        if: matrix.python-version == '3.9'
-        id: lamin-project
-        uses: CumulusDS/get-yaml-paths-action@v0.1.0
-        with:
-          file: lamin-project.yaml
-          project_slug: project_slug
-      - name: Change base URL to project-slug
-        if: github.event_name == 'push' && matrix.python-version == '3.9'
-        run: |
-          mv _build/html/index.html _build/html/${{ steps.lamin-project.outputs.project_slug }}.html
-          mv _build/html _build/html_tmp
-          mkdir _build/html
-          mv _build/html_tmp _build/html/docs
-      - name: Deploy docs
-        if: matrix.python-version == '3.9'
-        id: netlify
-        uses: nwtgck/actions-netlify@v1.2
-        with:
-          publish-dir: "_build/html"
-          production-deploy: ${{ github.event_name == 'push' }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          enable-commit-comment: false
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
