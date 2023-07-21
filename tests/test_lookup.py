@@ -1,6 +1,6 @@
 import pandas as pd
 
-from lamin_logger._lookup import Lookup
+from lamin_utils._lookup import Lookup
 
 
 def test_lookup():

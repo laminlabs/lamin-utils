@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from lamin_logger._inspect import inspect
+from lamin_utils._inspect import inspect
 
 
 @pytest.fixture(scope="module")

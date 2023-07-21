@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from lamin_logger._map_synonyms import (
+from lamin_utils._map_synonyms import (
     check_if_ids_in_field_values,
     explode_aggregated_column_to_map,
     map_synonyms,

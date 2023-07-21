@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from lamin_logger._search import search
+from lamin_utils._search import search
 
 
 @pytest.fixture(scope="module")
