@@ -1,4 +1,4 @@
-"""Lamin utils."""
+"""Lamin Utils."""
 
 __version__ = "0.8.2"
 
