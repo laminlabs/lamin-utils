@@ -1,5 +1,5 @@
-project_name: Lamin Logger
-description: Logging setup
-project_slug: lamin-logger
-repository_name: lamin-logger
-package_name: lamin_logger
+project_name: Lamin Utils
+description: Utils for LaminDB and Bionty
+project_slug: lamin-utils
+repository_name: lamin-utils
+package_name: lamin_utils
