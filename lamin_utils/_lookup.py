@@ -8,9 +8,12 @@ def _append_records_to_list(df_dict: Dict, value: str, record) -> None:
     values_list = df_dict[value]
     if not isinstance(values_list, list):
         values_list = [values_list]
-    values_set = set(values_list)
-    values_set.add(record)
-    df_dict[value] = list(values_set)
+    try:
+        values_set = set(values_list)
+        values_set.add(record)
+        df_dict[value] = list(values_set)
+    except TypeError:
+        df_dict[value] = values_list
 
 
 def _create_df_dict(
