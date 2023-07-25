@@ -1,6 +1,8 @@
 # ANSI color code: https://gist.github.com/iansan5653/c4a0b9f5c30d74258c5f132084b78db9
 ANSI_COLORS = dict(
     bold="\x1b[1m",
+    italic="\x1b[3m",
+    underline="\x1b[4m",
     black="\x1b[1;90m",
     red="\x1b[1;91m",
     green="\x1b[1;92m",
@@ -19,6 +21,14 @@ class colors:
     @staticmethod
     def bold(text):
         return f"{ANSI_COLORS['bold']}{text}{ANSI_COLORS['reset']}"
+
+    @staticmethod
+    def italic(text):
+        return f"{ANSI_COLORS['italic']}{text}{ANSI_COLORS['reset']}"
+
+    @staticmethod
+    def underline(text):
+        return f"{ANSI_COLORS['underline']}{text}{ANSI_COLORS['reset']}"
 
     @staticmethod
     def black(text):
