@@ -98,7 +98,7 @@ def map_synonyms(
         mapper = {k: v for k, v in mapper.items() if k != v}
         if keep is False:
             logger.warning(
-                "Retuning mapper might contain lists as values when 'keep=False'"
+                "Returning mapper might contain lists as values when 'keep=False'"
             )
             return {k: v[0] if len(v) == 1 else v for k, v in mapper.items()}
         else:

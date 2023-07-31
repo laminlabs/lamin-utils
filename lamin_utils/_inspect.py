@@ -96,8 +96,8 @@ def inspect(
                 f"Received {n_unique_terms} unique terms, {n_empty} empty/duplicated"
                 " terms are ignored"
             )
-        logger.success(f"{len(mapped)} terms ({frac_mapped}%) are mapped")
-        logger.warning(f"{len(unmapped)} terms ({frac_unmapped}%) are not mapped")
+        logger.success(f"{len(mapped)} terms ({frac_mapped:.2f}%) are mapped")
+        logger.warning(f"{len(unmapped)} terms ({frac_unmapped:.2f}%) are not mapped")
 
     if return_df:
         return mapped_df
