@@ -154,7 +154,7 @@ def test_inspect_empty_df():
 
 
 def test_validate(genes):
-    _, df = genes
+    df, _ = genes
     assert validate(
         identifiers=["A1CF", "a1cf"],
         field_values=df["symbol"],
