@@ -105,9 +105,6 @@ def test_inspect_return_df(genes):
 def test_inspect_case_sensitive(genes):
     df, _ = genes
 
-    mapping = inspect(df=df, identifiers=["A1CF", "A1BG", "a1cf"], field="symbol")
-    assert mapping == {"mapped": ["A1CF", "A1BG", "a1cf"], "not_mapped": []}
-
     mapping = inspect(
         df=df, identifiers=["A1CF", "A1BG", "a1cf"], field="symbol", case_sensitive=True
     )

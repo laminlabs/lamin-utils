@@ -21,8 +21,6 @@ def inspect(
         field: The BiontyField of the ontology to compare against.
                 Examples are 'ontology_id' to map against the source ID
                 or 'name' to map against the ontologies field names.
-        case_sensitive: Whether the identifier inspection is case sensitive.
-        inspect_synonyms: Whether to inspect synonyms.
         return_df: Whether to return a Pandas DataFrame.
 
     Returns:
@@ -47,23 +45,24 @@ def inspect(
                 "not_mapped": uniq_identifiers,
             }
 
-    # check if index is compliant
+    # check if index is compliant with exact matches
     mapped_df = check_if_ids_in_field_values(
         identifiers=identifiers,
         field_values=df[field],
-        case_sensitive=case_sensitive,
+        case_sensitive=True,
     )
-    if case_sensitive is False:
-        mapped_df_cs = check_if_ids_in_field_values(
-            identifiers=identifiers,
-            field_values=df[field],
-            case_sensitive=True,
+
+    # check without being case sensitive
+    mapped_df_noncs = check_if_ids_in_field_values(
+        identifiers=identifiers,
+        field_values=df[field],
+        case_sensitive=False,
+    )
+    if mapped_df_noncs["__mapped__"].sum() > mapped_df["__mapped__"].sum():
+        logger.warning(
+            "Detected inconsistent casing of mapped terms!\n   To increase validated"
+            " terms, standardize casing via '.map_synonyms()'"
         )
-        if mapped_df_cs["__mapped__"].sum() < mapped_df["__mapped__"].sum():
-            logger.warning(
-                "Detected inconsistent casing of mapped terms!\n   For best practice,"
-                " standardize casing via '.map_synonyms()'"
-            )
 
     mapped = unique_rm_empty(mapped_df.index[mapped_df["__mapped__"]]).tolist()
     unmapped = unique_rm_empty(mapped_df.index[~mapped_df["__mapped__"]]).tolist()
@@ -75,11 +74,11 @@ def inspect(
                 identifiers=unmapped,
                 field=field,
                 return_mapper=True,
-                case_sensitive=case_sensitive,
+                case_sensitive=False,
             )
             if len(synonyms_mapper) > 0:
                 logger.warning(
-                    "The identifiers contain synonyms!\n   To increase mappability,"
+                    "The identifiers contain synonyms!\n   To increase validated terms,"
                     " standardize them via '.map_synonyms()'"
                 )
         except Exception:
