@@ -134,26 +134,6 @@ def to_str(identifiers: Any, case_sensitive: bool = False):
     return values
 
 
-def check_if_ids_in_field_values(
-    identifiers: Iterable, field_values: Iterable, case_sensitive: bool = False
-) -> Any:
-    """Check if an iterable is in a list of values with case sensitive option."""
-    import pandas as pd
-
-    mapped_df = pd.DataFrame(index=identifiers)
-    mapped_df.index = to_str(mapped_df.index, case_sensitive=case_sensitive)
-
-    field_values = to_str(field_values, case_sensitive=case_sensitive)
-
-    # annotated what complies with the default ID
-    matches = mapped_df.index.isin(field_values)
-    mapped_df["__mapped__"] = matches
-
-    # make sure to convert back to the original identifiers
-    mapped_df.index = identifiers
-    return mapped_df
-
-
 def not_empty_none_na(values: Iterable):
     """Return values that are not empty string, None or NA."""
     import pandas as pd

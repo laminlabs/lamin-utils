@@ -1,7 +1,30 @@
 from typing import Any, Dict, Iterable, List
 
+from ._core import colors
 from ._logger import logger
-from ._map_synonyms import check_if_ids_in_field_values, map_synonyms
+from ._map_synonyms import map_synonyms, to_str
+
+
+def validate(
+    identifiers: Iterable,
+    field_values: Iterable,
+    case_sensitive: bool = True,
+    return_df: bool = False,
+) -> Any:
+    """Check if an iterable is in a list of values with case sensitive option."""
+    import pandas as pd
+
+    identifiers_idx = pd.Index(identifiers)
+    identifiers_idx = to_str(identifiers_idx, case_sensitive=case_sensitive)
+
+    field_values = to_str(field_values, case_sensitive=case_sensitive)
+
+    # annotated what complies with the default ID
+    matches = identifiers_idx.isin(field_values)
+    if return_df:
+        validated_df = pd.DataFrame(index=identifiers)
+        validated_df["__validated__"] = matches
+        return validated_df
 
 
 def inspect(
@@ -24,9 +47,9 @@ def inspect(
         return_df: Whether to return a Pandas DataFrame.
 
     Returns:
-        - A Dictionary of "mapped" and "unmapped" identifiers
-        - If `return_df`: A DataFrame indexed by identifiers with a boolean `__mapped__`
-            column that indicates compliance with the identifiers.
+        - A Dictionary of "validated" and "not_validated" identifiers
+        - If `return_df`: A DataFrame indexed by identifiers with a boolean
+            `__validated__` column indicating compliance validation.
     """
     import pandas as pd
 
@@ -38,70 +61,89 @@ def inspect(
     # empty DataFrame or input
     if df.shape[0] == 0 or len(uniq_identifiers) == 0:
         if return_df:
-            return pd.DataFrame(index=identifiers, data={"__mapped__": False})
+            return pd.DataFrame(index=identifiers, data={"__validated__": False})
         else:
             return {
-                "mapped": [],
-                "not_mapped": uniq_identifiers,
+                "validated": [],
+                "not_validated": uniq_identifiers,
             }
 
     # check if index is compliant with exact matches
-    mapped_df = check_if_ids_in_field_values(
+    validated_df = validate(
         identifiers=identifiers,
         field_values=df[field],
         case_sensitive=True,
+        return_df=True,
     )
 
     # check without being case sensitive
-    mapped_df_noncs = check_if_ids_in_field_values(
+    validated_df_noncs = validate(
         identifiers=identifiers,
         field_values=df[field],
         case_sensitive=False,
+        return_df=True,
     )
-    if mapped_df_noncs["__mapped__"].sum() > mapped_df["__mapped__"].sum():
-        logger.warning(
-            "Detected inconsistent casing of mapped terms!\n   To increase validated"
-            " terms, standardize casing via '.map_synonyms()'"
-        )
+    casing_warn_msg = ""
+    if validated_df_noncs["__validated__"].sum() > validated_df["__validated__"].sum():
+        casing_warn_msg = f"🟠 detected {colors.yellow('inconsistent casing')}"
 
-    mapped = unique_rm_empty(mapped_df.index[mapped_df["__mapped__"]]).tolist()
-    unmapped = unique_rm_empty(mapped_df.index[~mapped_df["__mapped__"]]).tolist()
+    validated = unique_rm_empty(
+        validated_df.index[validated_df["__validated__"]]
+    ).tolist()
+    unvalidated = unique_rm_empty(
+        validated_df.index[~validated_df["__validated__"]]
+    ).tolist()
 
+    synonyms_warn_msg = ""
     if inspect_synonyms:
         try:
             synonyms_mapper = map_synonyms(
                 df=df,
-                identifiers=unmapped,
+                identifiers=unvalidated,
                 field=field,
                 return_mapper=True,
                 case_sensitive=False,
             )
             if len(synonyms_mapper) > 0:
-                logger.warning(
-                    "The identifiers contain synonyms!\n   To increase validated terms,"
-                    " standardize them via '.map_synonyms()'"
-                )
+                synonyms_warn_msg = f"🟠 detected {colors.yellow('synonyms')}"
         except Exception:
             pass
 
-    n_unique_terms = len(mapped) + len(unmapped)
+    n_unique_terms = len(validated) + len(unvalidated)
     n_empty = len(list(identifiers)) - n_unique_terms
-    frac_unmapped = round(len(unmapped) / n_unique_terms * 100, 1)
-    frac_mapped = 100 - frac_unmapped
+    frac_unvalidated = round(len(unvalidated) / n_unique_terms * 100, 1)
+    frac_validated = 100 - frac_unvalidated
 
     if logging:
         if n_empty > 0:
             logger.warning(
-                f"Received {n_unique_terms} unique terms, {n_empty} empty/duplicated"
+                f"received {n_unique_terms} unique terms, {n_empty} empty/duplicated"
                 " terms are ignored"
             )
-        logger.success(f"{len(mapped)} terms ({frac_mapped:.2f}%) are mapped")
-        logger.warning(f"{len(unmapped)} terms ({frac_unmapped:.2f}%) are not mapped")
+        logger.success(f"{len(validated)} terms ({frac_validated:.2f}%) are validated")
+        if frac_validated < 100:
+            warn_msg = (
+                f"{len(unvalidated)} terms ({frac_unvalidated:.2f}%) are not validated"
+            )
+            hint = False
+            if len(casing_warn_msg) > 0:
+                warn_msg += f"\n   {casing_warn_msg}"
+                hint = True
+            if len(synonyms_warn_msg) > 0:
+                warn_msg += f"\n   {synonyms_warn_msg}"
+                hint = True
+            if hint:
+                warn_msg += (
+                    "\n   to increase validated terms, standardize them via"
+                    f" {colors.green('.map_synonyms()')}"
+                )
+
+            logger.warning(warn_msg)
 
     if return_df:
-        return mapped_df
+        return validated_df
     else:
         mapping: Dict[str, List[str]] = {}
-        mapping["mapped"] = mapped
-        mapping["not_mapped"] = unmapped
+        mapping["validated"] = validated
+        mapping["not_validated"] = unvalidated
         return mapping

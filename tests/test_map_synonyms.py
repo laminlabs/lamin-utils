@@ -2,7 +2,6 @@ import pandas as pd
 import pytest
 
 from lamin_utils._map_synonyms import (
-    check_if_ids_in_field_values,
     explode_aggregated_column_to_map,
     map_synonyms,
     not_empty_none_na,
@@ -159,19 +158,6 @@ def test_to_str():
     assert to_str(
         pd.Series(["A", "a", None, np.nan]), case_sensitive=True
     ).tolist() == ["A", "a", "", ""]
-
-
-def test_check_if_ids_in_field_values(genes):
-    _, df = genes
-    assert check_if_ids_in_field_values(
-        identifiers=["A1CF", "a1cf"], field_values=df["symbol"]
-    )["__mapped__"].tolist() == [True, True]
-    assert check_if_ids_in_field_values(
-        identifiers=["A1CF", "a1cf"], field_values=df["symbol"], case_sensitive=True
-    )["__mapped__"].tolist() == [True, False]
-    assert check_if_ids_in_field_values(
-        identifiers=df["symbol"], field_values=df["symbol"]
-    )["__mapped__"].tolist() == [True, True, True, True, True, True]
 
 
 def test_not_empty_none_na():

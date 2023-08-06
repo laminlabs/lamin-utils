@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from lamin_utils._inspect import inspect
+from lamin_utils._inspect import inspect, validate
 
 
 @pytest.fixture(scope="module")
@@ -48,14 +48,14 @@ def test_inspect_iterable(genes):
 
     mapping = inspect(df=df, identifiers=data.index, field="ensembl_gene_id")
     assert mapping == {
-        "mapped": ["ENSG00000148584", "ENSG00000121410", "ENSG00000188389"],
-        "not_mapped": ["ENSG0000corrupted"],
+        "validated": ["ENSG00000148584", "ENSG00000121410", "ENSG00000188389"],
+        "not_validated": ["ENSG0000corrupted"],
     }
 
     mapping = inspect(df=df, identifiers=data["hgnc id"], field="hgnc_id")
     assert mapping == {
-        "mapped": ["HGNC:24086", "HGNC:5", "HGNC:1101"],
-        "not_mapped": ["corrupted"],
+        "validated": ["HGNC:24086", "HGNC:5", "HGNC:1101"],
+        "not_validated": ["corrupted"],
     }
 
 
@@ -64,16 +64,16 @@ def test_inspect_inspect_synonyms(genes):
 
     mapping = inspect(df=df, identifiers=data["gene symbol"], field="symbol")
     assert mapping == {
-        "mapped": ["A1CF", "A1BG"],
-        "not_mapped": ["FANCD1", "corrupted"],
+        "validated": ["A1CF", "A1BG"],
+        "not_validated": ["FANCD1", "corrupted"],
     }
 
     mapping = inspect(
         df=df, identifiers=data["gene symbol"], field="symbol", inspect_synonyms=False
     )
     assert mapping == {
-        "mapped": ["A1CF", "A1BG"],
-        "not_mapped": ["FANCD1", "corrupted"],
+        "validated": ["A1CF", "A1BG"],
+        "not_validated": ["FANCD1", "corrupted"],
     }
 
     df = df.drop(columns=["synonyms"])
@@ -95,7 +95,7 @@ def test_inspect_return_df(genes):
             "ENSG0000corrupted",
         ],
         data={
-            "__mapped__": [True, True, True, False],
+            "__validated__": [True, True, True, False],
         },
     )
 
@@ -108,7 +108,7 @@ def test_inspect_case_sensitive(genes):
     mapping = inspect(
         df=df, identifiers=["A1CF", "A1BG", "a1cf"], field="symbol", case_sensitive=True
     )
-    assert mapping == {"mapped": ["A1CF", "A1BG"], "not_mapped": ["a1cf"]}
+    assert mapping == {"validated": ["A1CF", "A1BG"], "not_validated": ["a1cf"]}
 
 
 def test_inspect_empty_dup_input(genes):
@@ -121,7 +121,7 @@ def test_inspect_empty_dup_input(genes):
         identifiers=pd.Series(["A1CF", "A1BG", "A1BG", "", None, np.nan]),
         field="symbol",
     )
-    assert mapping == {"mapped": ["A1CF", "A1BG"], "not_mapped": []}
+    assert mapping == {"validated": ["A1CF", "A1BG"], "not_validated": []}
 
 
 def test_inspect_empty_df():
@@ -134,7 +134,7 @@ def test_inspect_empty_df():
         field="symbol",
     )
 
-    assert mapping == {"mapped": [], "not_mapped": ["A1CF", "A1BG"]}
+    assert mapping == {"validated": [], "not_validated": ["A1CF", "A1BG"]}
 
     mapping = inspect(
         df=pd.DataFrame(),
@@ -146,8 +146,27 @@ def test_inspect_empty_df():
     expected_df = pd.DataFrame(
         index=["A1CF", "A1BG", "A1BG", "", None, np.nan],
         data={
-            "__mapped__": [False, False, False, False, False, False],
+            "__validated__": [False, False, False, False, False, False],
         },
     )
 
     assert mapping.equals(expected_df)
+
+
+def test_validate(genes):
+    _, df = genes
+    assert validate(
+        identifiers=["A1CF", "a1cf"],
+        field_values=df["symbol"],
+        case_sensitive=True,
+    ).tolist() == [True, False]
+    assert validate(
+        identifiers=["A1CF", "a1cf"],
+        field_values=df["symbol"],
+        case_sensitive=False,
+        return_df=True,
+    )["__validated__"].tolist() == [True, True]
+    assert validate(
+        identifiers=df["symbol"],
+        field_values=df["symbol"],
+    ).tolist() == [True, True, True]
