@@ -47,9 +47,10 @@ logging.addLevelName(SUCCESS, "SUCCESS")
 VERBOSITY_TO_LOGLEVEL = {
     0: "ERROR",
     1: "WARNING",
-    2: "INFO",
-    3: "HINT",
-    4: "DEBUG",
+    2: "SUCCESS",
+    3: "INFO",
+    4: "HINT",
+    5: "DEBUG",
 }
 
 
