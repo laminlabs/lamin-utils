@@ -25,6 +25,8 @@ def validate(
         validated_df = pd.DataFrame(index=identifiers)
         validated_df["__validated__"] = matches
         return validated_df
+    else:
+        return matches
 
 
 def inspect(
