@@ -64,7 +64,7 @@ def test_inspect_iterable(genes):
         "ENSG00000121410",
         "ENSG00000188389",
     ]
-    assert result["unmapped"] == ["ENSG0000corrupted"]
+    assert result["not_mapped"] == ["ENSG0000corrupted"]
 
     result = inspect(df=df, identifiers=data["hgnc id"], field="hgnc_id")
     assert result["validated"] == ["HGNC:24086", "HGNC:5", "HGNC:1101"]

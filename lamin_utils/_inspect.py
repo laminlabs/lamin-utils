@@ -14,7 +14,7 @@ def validate(
     field_values: Iterable,
     case_sensitive: bool = True,
     **kwargs,
-) -> "np.ndarray[bool]":
+) -> "np.ndarray":
     """Check if an iterable is in a list of values with case sensitive option."""
     import pandas as pd
 
