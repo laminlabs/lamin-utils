@@ -134,6 +134,10 @@ class RootLogger(logging.RootLogger):
     def debug(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
         return self.log(DEBUG, msg, time=time, deep=deep, extra=extra)
 
+    # backward compat
+    def download(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+        return self.log(SAVE, msg, time=time, deep=deep, extra=extra)
+
 
 class _LogFormatter(logging.Formatter):
     def __init__(
