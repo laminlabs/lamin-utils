@@ -162,8 +162,9 @@ def test_inspect_empty_df():
 
 
 def test_inspect_casing():
+    df, _ = genes
     result = inspect(
-        df=pd.DataFrame(),
+        df=df,
         identifiers=pd.Series(["a1cf", "A1BG"]),
         field="symbol",
     )
