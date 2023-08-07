@@ -161,7 +161,7 @@ def test_inspect_empty_df():
     assert result.equals(expected_df)
 
 
-def test_inspect_casing():
+def test_inspect_casing(genes):
     df, _ = genes
     result = inspect(
         df=df,
