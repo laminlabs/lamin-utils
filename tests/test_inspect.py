@@ -65,6 +65,8 @@ def test_inspect_iterable(genes):
         "ENSG00000188389",
     ]
     assert result["not_mapped"] == ["ENSG0000corrupted"]
+    with pytest.raises(KeyError):
+        result["unmapped"]
 
     result = inspect(df=df, identifiers=data["hgnc id"], field="hgnc_id")
     assert result["validated"] == ["HGNC:24086", "HGNC:5", "HGNC:1101"]
@@ -139,12 +141,14 @@ def test_inspect_empty_df():
 
     assert result.validated == []
     assert result.non_validated == ["A1CF", "A1BG"]
+    assert result.frac_validated == 0
 
     result = inspect(
         df=pd.DataFrame(),
         identifiers=pd.Series(["A1CF", "A1BG", "A1BG", "", None, np.nan]),
         field="symbol",
         return_df=True,
+        logging=False,
     )
 
     expected_df = pd.DataFrame(
@@ -155,6 +159,16 @@ def test_inspect_empty_df():
     )
 
     assert result.equals(expected_df)
+
+
+def test_inspect_casing():
+    result = inspect(
+        df=pd.DataFrame(),
+        identifiers=pd.Series(["a1cf", "A1BG"]),
+        field="symbol",
+    )
+    assert result.validated == ["A1BG"]
+    assert result.non_validated == ["a1cf"]
 
 
 def test_validate(genes):
