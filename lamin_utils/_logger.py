@@ -38,19 +38,19 @@ from logging import CRITICAL, DEBUG, ERROR, INFO, WARNING, getLevelName
 from typing import Optional
 
 HINT = 15
-DOWNLOAD = 21
+SAVE = 21
 SUCCESS = 25
 logging.addLevelName(HINT, "HINT")
-logging.addLevelName(DOWNLOAD, "DOWNLOAD")
+logging.addLevelName(SAVE, "SAVE")
 logging.addLevelName(SUCCESS, "SUCCESS")
 
 VERBOSITY_TO_LOGLEVEL = {
-    0: "ERROR",
-    1: "WARNING",
-    2: "SUCCESS",
-    3: "INFO",
-    4: "HINT",
-    5: "DEBUG",
+    0: "ERROR",  # 40
+    1: "WARNING",  # 30
+    2: "SUCCESS",  # 25
+    3: "INFO",  # 20
+    4: "HINT",  # 15
+    5: "DEBUG",  # 10
 }
 
 
@@ -58,8 +58,8 @@ LEVEL_TO_ICONS = {
     40: "❌",  # error
     30: "🔶",  # warning
     25: "✅",  # success
-    21: "💾",  # download
-    20: "💬",  # info
+    21: "🌱",  # save
+    20: "💡",  # info
     15: "💡",  # hint
     10: "🐛",  # debug
 }
@@ -99,9 +99,11 @@ class RootLogger(logging.RootLogger):
         time_passed: timedelta = None if time is None else now - time  # type: ignore
         extra = {
             **(extra or {}),
-            "deep": deep
-            if getLevelName(VERBOSITY_TO_LOGLEVEL[self._verbosity]) < level
-            else None,
+            "deep": (
+                deep
+                if getLevelName(VERBOSITY_TO_LOGLEVEL[self._verbosity]) < level
+                else None
+            ),
             "time_passed": time_passed,
         }
         msg = f"{self.indent}{msg}"
@@ -123,8 +125,8 @@ class RootLogger(logging.RootLogger):
     def info(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
         return self.log(INFO, msg, time=time, deep=deep, extra=extra)
 
-    def download(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
-        return self.log(DOWNLOAD, msg, time=time, deep=deep, extra=extra)
+    def save(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+        return self.log(SAVE, msg, time=time, deep=deep, extra=extra)
 
     def hint(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
         return self.log(HINT, msg, time=time, deep=deep, extra=extra)
