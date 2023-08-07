@@ -1,16 +1,20 @@
-from typing import Any, Dict, Iterable, List
+from typing import TYPE_CHECKING, Iterable, List
 
 from ._core import colors
 from ._logger import logger
 from ._map_synonyms import map_synonyms, to_str
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
 
 
 def validate(
     identifiers: Iterable,
     field_values: Iterable,
     case_sensitive: bool = True,
-    return_df: bool = False,
-) -> Any:
+    **kwargs,
+) -> "np.ndarray[bool]":
     """Check if an iterable is in a list of values with case sensitive option."""
     import pandas as pd
 
@@ -21,7 +25,7 @@ def validate(
 
     # annotated what complies with the default ID
     matches = identifiers_idx.isin(field_values)
-    if return_df:
+    if kwargs.get("return_df") is True:
         validated_df = pd.DataFrame(index=identifiers)
         validated_df["__validated__"] = matches
         return validated_df
@@ -30,15 +34,13 @@ def validate(
 
 
 def inspect(
-    df: Any,
+    df: "pd.DataFrame",
     identifiers: Iterable,
     field: str,
     *,
-    case_sensitive: bool = False,
-    inspect_synonyms: bool = True,
-    return_df: bool = False,
-    logging: bool = True,
-) -> Any:
+    mute: bool = False,
+    **kwargs,
+) -> "InspectResult":
     """Inspect if a list of identifiers are mappable to the entity reference.
 
     Args:
@@ -49,10 +51,11 @@ def inspect(
         return_df: Whether to return a Pandas DataFrame.
 
     Returns:
-        - A Dictionary of "validated" and "not_validated" identifiers
-        - If `return_df`: A DataFrame indexed by identifiers with a boolean
-            `__validated__` column indicating compliance validation.
+        InspectResult object
     """
+    # backward compat
+    if isinstance(kwargs.get("logging"), bool):
+        mute = not kwargs.get("logging")
     import pandas as pd
 
     def unique_rm_empty(idx: pd.Index):
@@ -62,13 +65,12 @@ def inspect(
     uniq_identifiers = unique_rm_empty(pd.Index(identifiers)).tolist()
     # empty DataFrame or input
     if df.shape[0] == 0 or len(uniq_identifiers) == 0:
-        if return_df:
-            return pd.DataFrame(index=identifiers, data={"__validated__": False})
+        validated_df = pd.DataFrame(index=identifiers, data={"__validated__": False})
+        result = InspectResult(validated_df, [], uniq_identifiers, frac_validated=0.0)
+        if kwargs.get("return_df") is True:
+            return result.df
         else:
-            return {
-                "validated": [],
-                "not_validated": uniq_identifiers,
-            }
+            return result
 
     # check if index is compliant with exact matches
     validated_df = validate(
@@ -92,16 +94,17 @@ def inspect(
     validated = unique_rm_empty(
         validated_df.index[validated_df["__validated__"]]
     ).tolist()
-    unvalidated = unique_rm_empty(
+    nonvalidated = unique_rm_empty(
         validated_df.index[~validated_df["__validated__"]]
     ).tolist()
 
     synonyms_warn_msg = ""
-    if inspect_synonyms:
+    # backward compat
+    if kwargs.get("inspect_synonyms") is not False:
         try:
             synonyms_mapper = map_synonyms(
                 df=df,
-                identifiers=unvalidated,
+                identifiers=nonvalidated,
                 field=field,
                 return_mapper=True,
                 case_sensitive=False,
@@ -111,12 +114,12 @@ def inspect(
         except Exception:
             pass
 
-    n_unique_terms = len(validated) + len(unvalidated)
+    n_unique_terms = len(validated) + len(nonvalidated)
     n_empty = len(list(identifiers)) - n_unique_terms
-    frac_unvalidated = round(len(unvalidated) / n_unique_terms * 100, 1)
-    frac_validated = 100 - frac_unvalidated
+    frac_nonvalidated = round(len(nonvalidated) / n_unique_terms * 100, 1)
+    frac_validated = 100 - frac_nonvalidated
 
-    if logging:
+    if not mute:
         if n_empty > 0:
             logger.warning(
                 f"received {n_unique_terms} unique terms, {n_empty} empty/duplicated"
@@ -125,7 +128,8 @@ def inspect(
         logger.success(f"{len(validated)} terms ({frac_validated:.2f}%) are validated")
         if frac_validated < 100:
             warn_msg = (
-                f"{len(unvalidated)} terms ({frac_unvalidated:.2f}%) are not validated"
+                f"{len(nonvalidated)} terms ({frac_nonvalidated:.2f}%) are not"
+                " validated"
             )
             hint = False
             if len(casing_warn_msg) > 0:
@@ -142,10 +146,56 @@ def inspect(
 
             logger.warning(warn_msg)
 
-    if return_df:
-        return validated_df
-    else:
-        mapping: Dict[str, List[str]] = {}
-        mapping["validated"] = validated
-        mapping["not_validated"] = unvalidated
-        return mapping
+    result = InspectResult(validated_df, validated, nonvalidated, frac_validated)
+    # backward compat
+    if kwargs.get("return_df") is True:
+        return result.df
+
+    return result
+
+
+class InspectResult:
+    """Result of inspect."""
+
+    def __init__(
+        self,
+        validated_df,
+        validated: List[str],
+        nonvalidated: List[str],
+        frac_validated: float,
+    ) -> None:
+        self._df = validated_df
+        self._validated = validated
+        self._non_validated = nonvalidated
+        self._frac_validated = frac_validated
+
+    @property
+    def df(self) -> "pd.DataFrame":
+        """A DataFrame indexed by values with a boolean `__validated__` column."""  # noqa
+        return self._df
+
+    @property
+    def validated(self) -> List[str]:
+        return self._validated
+
+    @property
+    def non_validated(self) -> List[str]:
+        return self._non_validated
+
+    @property
+    def frac_validated(self) -> float:
+        return self._frac_validated
+
+    def __getitem__(self, key) -> List[str]:
+        """Bracket access to the inspect result."""
+        if key == "validated":
+            return self.validated
+        elif key == "non_validated":
+            return self.non_validated
+        # backward compatibility below
+        elif key == "mapped":
+            return self.validated
+        elif key == "not_mapped":
+            return self.non_validated
+        else:
+            raise KeyError("invalid key")

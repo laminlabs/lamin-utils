@@ -46,44 +46,52 @@ def genes():
 def test_inspect_iterable(genes):
     df, data = genes
 
-    mapping = inspect(df=df, identifiers=data.index, field="ensembl_gene_id")
-    assert mapping == {
-        "validated": ["ENSG00000148584", "ENSG00000121410", "ENSG00000188389"],
-        "not_validated": ["ENSG0000corrupted"],
-    }
+    result = inspect(df=df, identifiers=data.index, field="ensembl_gene_id")
+    assert result.validated == [
+        "ENSG00000148584",
+        "ENSG00000121410",
+        "ENSG00000188389",
+    ]
+    assert result.non_validated == ["ENSG0000corrupted"]
+    assert result["validated"] == [
+        "ENSG00000148584",
+        "ENSG00000121410",
+        "ENSG00000188389",
+    ]
+    assert result["non_validated"] == ["ENSG0000corrupted"]
+    assert result["mapped"] == [
+        "ENSG00000148584",
+        "ENSG00000121410",
+        "ENSG00000188389",
+    ]
+    assert result["unmapped"] == ["ENSG0000corrupted"]
 
-    mapping = inspect(df=df, identifiers=data["hgnc id"], field="hgnc_id")
-    assert mapping == {
-        "validated": ["HGNC:24086", "HGNC:5", "HGNC:1101"],
-        "not_validated": ["corrupted"],
-    }
+    result = inspect(df=df, identifiers=data["hgnc id"], field="hgnc_id")
+    assert result["validated"] == ["HGNC:24086", "HGNC:5", "HGNC:1101"]
+    assert result["non_validated"] == ["corrupted"]
 
 
 def test_inspect_inspect_synonyms(genes):
     df, data = genes
 
-    mapping = inspect(df=df, identifiers=data["gene symbol"], field="symbol")
-    assert mapping == {
-        "validated": ["A1CF", "A1BG"],
-        "not_validated": ["FANCD1", "corrupted"],
-    }
+    result = inspect(df=df, identifiers=data["gene symbol"], field="symbol")
+    assert result.validated == ["A1CF", "A1BG"]
+    assert result.non_validated == ["FANCD1", "corrupted"]
 
-    mapping = inspect(
+    result = inspect(
         df=df, identifiers=data["gene symbol"], field="symbol", inspect_synonyms=False
     )
-    assert mapping == {
-        "validated": ["A1CF", "A1BG"],
-        "not_validated": ["FANCD1", "corrupted"],
-    }
+    assert result.validated == ["A1CF", "A1BG"]
+    assert result.non_validated == ["FANCD1", "corrupted"]
 
     df = df.drop(columns=["synonyms"])
-    mapping = inspect(df=df, identifiers=data["gene symbol"], field="symbol")
+    result = inspect(df=df, identifiers=data["gene symbol"], field="symbol")
 
 
 def test_inspect_return_df(genes):
     df, data = genes
 
-    mapping = inspect(
+    result = inspect(
         df=df, identifiers=data.index, field="ensembl_gene_id", return_df=True
     )
 
@@ -99,16 +107,10 @@ def test_inspect_return_df(genes):
         },
     )
 
-    assert mapping.equals(expected_df)
+    assert result.equals(expected_df)
 
-
-def test_inspect_case_sensitive(genes):
-    df, _ = genes
-
-    mapping = inspect(
-        df=df, identifiers=["A1CF", "A1BG", "a1cf"], field="symbol", case_sensitive=True
-    )
-    assert mapping == {"validated": ["A1CF", "A1BG"], "not_validated": ["a1cf"]}
+    result = inspect(df=df, identifiers=data.index, field="ensembl_gene_id")
+    assert result.df.equals(expected_df)
 
 
 def test_inspect_empty_dup_input(genes):
@@ -116,27 +118,29 @@ def test_inspect_empty_dup_input(genes):
 
     df, _ = genes
 
-    mapping = inspect(
+    result = inspect(
         df=df,
         identifiers=pd.Series(["A1CF", "A1BG", "A1BG", "", None, np.nan]),
         field="symbol",
     )
-    assert mapping == {"validated": ["A1CF", "A1BG"], "not_validated": []}
+    assert result.validated == ["A1CF", "A1BG"]
+    assert result.non_validated == []
 
 
 def test_inspect_empty_df():
     import numpy as np
     import pandas as pd
 
-    mapping = inspect(
+    result = inspect(
         df=pd.DataFrame(),
         identifiers=pd.Series(["A1CF", "A1BG", "A1BG", "", None, np.nan]),
         field="symbol",
     )
 
-    assert mapping == {"validated": [], "not_validated": ["A1CF", "A1BG"]}
+    assert result.validated == []
+    assert result.non_validated == ["A1CF", "A1BG"]
 
-    mapping = inspect(
+    result = inspect(
         df=pd.DataFrame(),
         identifiers=pd.Series(["A1CF", "A1BG", "A1BG", "", None, np.nan]),
         field="symbol",
@@ -150,7 +154,7 @@ def test_inspect_empty_df():
         },
     )
 
-    assert mapping.equals(expected_df)
+    assert result.equals(expected_df)
 
 
 def test_validate(genes):
