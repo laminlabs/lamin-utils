@@ -136,7 +136,6 @@ def inspect(
         casing_warn_msg = f"🟠 detected {colors.yellow('inconsistent casing')}"
 
     result = _validate_stats(identifiers=identifiers, matches=matches)
-    _validate_logging(result=result)
 
     synonyms_warn_msg = ""
     # backward compat
@@ -155,6 +154,7 @@ def inspect(
             pass
 
     if not mute:
+        _validate_logging(result=result)
         warn_msg = ""
         hint = False
         if len(casing_warn_msg) > 0:
