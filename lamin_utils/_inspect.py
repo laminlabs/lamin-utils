@@ -34,7 +34,7 @@ def validate(
     return matches
 
 
-def _unique_rm_empty(idx: pd.Index):
+def _unique_rm_empty(idx: "pd.Index"):
     idx = idx.unique()
     return idx[(idx != "") & (~idx.isnull())]
 
