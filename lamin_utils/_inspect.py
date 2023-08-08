@@ -64,17 +64,24 @@ def _validate_stats(identifiers: Iterable, matches: "np.ndarray"):
 def _validate_logging(result: "InspectResult"):
     """Logging of the validated result."""
     if result.n_empty > 0:
+        unique_s = "" if result.n_unique == 1 else "s"
+        empty_s = " is" if result.n_empty == 1 else "s are"
         logger.warning(
-            f"received {result.n_unique} unique terms,"
-            f" {result.n_empty} empty/duplicated terms are ignored"
+            f"received {result.n_unique} unique term{unique_s},"
+            f" {result.n_empty} empty/duplicated term{empty_s} ignored"
         )
+    s = "" if len(result.validated) == 1 else "s"
+    are = "is" if len(result.validated) == 1 else "are"
     logger.success(
-        f"{len(result.validated)} terms ({result.frac_validated:.2f}%) are validated"
+        f"{len(result.validated)} term{s} ({result.frac_validated:.2f}%)"
+        f" {are} validated"
     )
     if result.frac_validated < 100:
+        s = "" if len(result.non_validated) == 1 else "s"
+        are = "is" if len(result.non_validated) == 1 else "are"
         warn_msg = (
-            f"{len(result.non_validated)} terms ({(1-result.frac_validated):.2f}%) are"
-            " not validated"
+            f"{len(result.non_validated)} term{s} ({(100-result.frac_validated):.2f}%)"
+            f" {are} not validated"
         )
         logger.warning(warn_msg)
 
@@ -129,6 +136,7 @@ def inspect(
         casing_warn_msg = f"🟠 detected {colors.yellow('inconsistent casing')}"
 
     result = _validate_stats(identifiers=identifiers, matches=matches)
+    _validate_logging(result=result)
 
     synonyms_warn_msg = ""
     # backward compat
