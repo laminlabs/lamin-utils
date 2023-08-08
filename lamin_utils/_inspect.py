@@ -40,6 +40,8 @@ def _unique_rm_empty(idx: "pd.Index"):
 
 
 def _validate_stats(identifiers: Iterable, matches: "np.ndarray"):
+    import pandas as pd
+
     df_val = pd.DataFrame(data={"__validated__": matches}, index=identifiers)
     val = _unique_rm_empty(df_val.index[df_val["__validated__"]]).tolist()
     nonval = _unique_rm_empty(df_val.index[~df_val["__validated__"]]).tolist()
