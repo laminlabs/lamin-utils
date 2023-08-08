@@ -12,10 +12,14 @@ if TYPE_CHECKING:
 def validate(
     identifiers: Iterable,
     field_values: Iterable,
+    *,
     case_sensitive: bool = True,
+    mute: bool = False,
     **kwargs,
 ) -> "np.ndarray":
     """Check if an iterable is in a list of values with case sensitive option."""
+    if isinstance(kwargs.get("logging"), bool):
+        mute = not kwargs.get("logging")
     import pandas as pd
 
     identifiers_idx = pd.Index(identifiers)
@@ -25,12 +29,52 @@ def validate(
 
     # annotated what complies with the default ID
     matches = identifiers_idx.isin(field_values)
-    if kwargs.get("return_df") is True:
-        validated_df = pd.DataFrame(index=identifiers)
-        validated_df["__validated__"] = matches
-        return validated_df
-    else:
-        return matches
+    if not mute:
+        _validate_logging(_validate_stats(identifiers=identifiers, matches=matches))
+    return matches
+
+
+def _unique_rm_empty(idx: pd.Index):
+    idx = idx.unique()
+    return idx[(idx != "") & (~idx.isnull())]
+
+
+def _validate_stats(identifiers: Iterable, matches: "np.ndarray"):
+    df_val = pd.DataFrame(data={"__validated__": matches}, index=identifiers)
+    val = _unique_rm_empty(df_val.index[df_val["__validated__"]]).tolist()
+    nonval = _unique_rm_empty(df_val.index[~df_val["__validated__"]]).tolist()
+
+    n_unique = len(val) + len(nonval)
+    n_empty = df_val.shape[0] - n_unique
+    frac_nonval = round(len(nonval) / n_unique * 100, 1)
+    frac_val = 100 - frac_nonval
+
+    return InspectResult(
+        validated_df=df_val,
+        validated=val,
+        nonvalidated=nonval,
+        frac_validated=frac_val,
+        n_empty=n_empty,
+        n_unique=n_unique,
+    )
+
+
+def _validate_logging(result: "InspectResult"):
+    """Logging of the validated result."""
+    if result.n_empty > 0:
+        logger.warning(
+            f"received {result.n_unique} unique terms,"
+            f" {result.n_empty} empty/duplicated terms are ignored"
+        )
+    logger.success(
+        f"{len(result.validated)} terms ({result.frac_validated:.2f}%) are validated"
+    )
+    if result.frac_validated < 100:
+        warn_msg = (
+            f"{len(result.non_validated)} terms ({(1-result.frac_validated):.2f}%) are"
+            " not validated"
+        )
+        logger.warning(warn_msg)
 
 
 def inspect(
@@ -58,45 +102,31 @@ def inspect(
         mute = not kwargs.get("logging")
     import pandas as pd
 
-    def unique_rm_empty(idx: pd.Index):
-        idx = idx.unique()
-        return idx[(idx != "") & (~idx.isnull())]
-
-    uniq_identifiers = unique_rm_empty(pd.Index(identifiers)).tolist()
+    uniq_identifiers = _unique_rm_empty(pd.Index(identifiers)).tolist()
     # empty DataFrame or input
     if df.shape[0] == 0 or len(uniq_identifiers) == 0:
-        validated_df = pd.DataFrame(index=identifiers, data={"__validated__": False})
-        result = InspectResult(validated_df, [], uniq_identifiers, frac_validated=0.0)
+        result = _validate_stats(
+            identifiers=identifiers, matches=[False] * len(identifiers)  # type:ignore
+        )
         if kwargs.get("return_df") is True:
             return result.df
         else:
             return result
 
     # check if index is compliant with exact matches
-    validated_df = validate(
-        identifiers=identifiers,
-        field_values=df[field],
-        case_sensitive=True,
-        return_df=True,
+    matches = validate(
+        identifiers=identifiers, field_values=df[field], case_sensitive=True, mute=True
+    )
+    # matches if case sensitive is turned off
+    noncs_matches = validate(
+        identifiers=identifiers, field_values=df[field], case_sensitive=False, mute=True
     )
 
-    # check without being case sensitive
-    validated_df_noncs = validate(
-        identifiers=identifiers,
-        field_values=df[field],
-        case_sensitive=False,
-        return_df=True,
-    )
     casing_warn_msg = ""
-    if validated_df_noncs["__validated__"].sum() > validated_df["__validated__"].sum():
+    if noncs_matches.sum() > matches.sum():
         casing_warn_msg = f"🟠 detected {colors.yellow('inconsistent casing')}"
 
-    validated = unique_rm_empty(
-        validated_df.index[validated_df["__validated__"]]
-    ).tolist()
-    nonvalidated = unique_rm_empty(
-        validated_df.index[~validated_df["__validated__"]]
-    ).tolist()
+    result = _validate_stats(identifiers=identifiers, matches=matches)
 
     synonyms_warn_msg = ""
     # backward compat
@@ -104,7 +134,7 @@ def inspect(
         try:
             synonyms_mapper = map_synonyms(
                 df=df,
-                identifiers=nonvalidated,
+                identifiers=result.non_validated,
                 field=field,
                 return_mapper=True,
                 case_sensitive=False,
@@ -114,39 +144,23 @@ def inspect(
         except Exception:
             pass
 
-    n_unique_terms = len(validated) + len(nonvalidated)
-    n_empty = len(list(identifiers)) - n_unique_terms
-    frac_nonvalidated = round(len(nonvalidated) / n_unique_terms * 100, 1)
-    frac_validated = 100 - frac_nonvalidated
-
     if not mute:
-        if n_empty > 0:
-            logger.warning(
-                f"received {n_unique_terms} unique terms, {n_empty} empty/duplicated"
-                " terms are ignored"
+        warn_msg = ""
+        hint = False
+        if len(casing_warn_msg) > 0:
+            warn_msg += f"\n   {casing_warn_msg}"
+            hint = True
+        if len(synonyms_warn_msg) > 0:
+            warn_msg += f"\n   {synonyms_warn_msg}"
+            hint = True
+        if hint:
+            warn_msg += (
+                "\n   to increase validated terms, standardize them via"
+                f" {colors.green('.map_synonyms()')}"
             )
-        logger.success(f"{len(validated)} terms ({frac_validated:.2f}%) are validated")
-        if frac_validated < 100:
-            warn_msg = (
-                f"{len(nonvalidated)} terms ({frac_nonvalidated:.2f}%) are not"
-                " validated"
-            )
-            hint = False
-            if len(casing_warn_msg) > 0:
-                warn_msg += f"\n   {casing_warn_msg}"
-                hint = True
-            if len(synonyms_warn_msg) > 0:
-                warn_msg += f"\n   {synonyms_warn_msg}"
-                hint = True
-            if hint:
-                warn_msg += (
-                    "\n   to increase validated terms, standardize them via"
-                    f" {colors.green('.map_synonyms()')}"
-                )
-
+        if len(warn_msg) > 0:
             logger.warning(warn_msg)
 
-    result = InspectResult(validated_df, validated, nonvalidated, frac_validated)
     # backward compat
     if kwargs.get("return_df") is True:
         return result.df
@@ -159,15 +173,19 @@ class InspectResult:
 
     def __init__(
         self,
-        validated_df,
+        validated_df: "pd.DataFrame",
         validated: List[str],
         nonvalidated: List[str],
         frac_validated: float,
+        n_empty: int,
+        n_unique: int,
     ) -> None:
         self._df = validated_df
         self._validated = validated
         self._non_validated = nonvalidated
         self._frac_validated = frac_validated
+        self._n_empty = n_empty
+        self._n_unique = n_unique
 
     @property
     def df(self) -> "pd.DataFrame":
@@ -185,6 +203,14 @@ class InspectResult:
     @property
     def frac_validated(self) -> float:
         return self._frac_validated
+
+    @property
+    def n_empty(self) -> int:
+        return self._n_empty
+
+    @property
+    def n_unique(self) -> int:
+        return self._n_unique
 
     def __getitem__(self, key) -> List[str]:
         """Bracket access to the inspect result."""
