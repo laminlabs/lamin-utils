@@ -184,7 +184,7 @@ def test_validate(genes):
         field_values=df["symbol"],
         case_sensitive=False,
         return_df=True,
-    )["__validated__"].tolist() == [True, True]
+    ).tolist() == [True, True]
     assert validate(
         identifiers=df["symbol"],
         field_values=df["symbol"],
