@@ -165,8 +165,8 @@ def inspect(
             hint = True
         if hint:
             warn_msg += (
-                "\n   to increase validated terms, standardize them via"
-                f" {colors.green('.map_synonyms()')}"
+                "\n   to increase validated terms, run"
+                f" {colors.green('.standardize()')}"
             )
         if len(warn_msg) > 0:
             logger.warning(warn_msg)
