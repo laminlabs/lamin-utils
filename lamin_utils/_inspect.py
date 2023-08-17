@@ -63,16 +63,17 @@ def _validate_stats(identifiers: Iterable, matches: "np.ndarray"):
 
 def _validate_logging(result: "InspectResult"):
     """Logging of the validated result."""
+    empty_warn_msg = ""
     if result.n_empty > 0:
         unique_s = "" if result.n_unique == 1 else "s"
         empty_s = " is" if result.n_empty == 1 else "s are"
-        logger.warning(
+        empty_warn_msg = (
             f"received {result.n_unique} unique term{unique_s},"
             f" {result.n_empty} empty/duplicated term{empty_s} ignored"
         )
     s = "" if len(result.validated) == 1 else "s"
     are = "is" if len(result.validated) == 1 else "are"
-    logger.success(
+    success_msg = (
         f"{len(result.validated)} term{s} ({result.frac_validated:.2f}%)"
         f" {are} validated"
     )
@@ -83,7 +84,12 @@ def _validate_logging(result: "InspectResult"):
             f"{len(result.non_validated)} term{s} ({(100-result.frac_validated):.2f}%)"
             f" {are} not validated"
         )
+        if len(empty_warn_msg) > 0:
+            logger.warning(empty_warn_msg)
+        logger.success(success_msg)
         logger.warning(warn_msg)
+    else:
+        logger.success(success_msg)
 
 
 def inspect(
