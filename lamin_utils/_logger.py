@@ -56,9 +56,9 @@ VERBOSITY_TO_LOGLEVEL = {
 
 LEVEL_TO_ICONS = {
     40: "❌",  # error
-    30: "🔶",  # warning
+    30: "❗",  # warning
     25: "✅",  # success
-    21: "🌱",  # save
+    21: "✅",  # save
     20: "💡",  # info
     15: "💡",  # hint
     10: "🐛",  # debug
