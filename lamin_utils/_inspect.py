@@ -135,6 +135,7 @@ def inspect(
         result = _validate_stats(
             identifiers=identifiers, matches=[False] * len(identifiers)  # type:ignore
         )
+        _validate_logging(result=result, field=field)
         if kwargs.get("return_df") is True:
             return result.df
         else:
