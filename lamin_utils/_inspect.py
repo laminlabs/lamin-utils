@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Iterable, List
+from typing import TYPE_CHECKING, Iterable, List, Optional
 
 from ._core import colors
 from ._logger import logger
@@ -15,6 +15,7 @@ def validate(
     *,
     case_sensitive: bool = True,
     mute: bool = False,
+    field: Optional[str] = None,
     **kwargs,
 ) -> "np.ndarray":
     """Check if an iterable is in a list of values with case sensitive option."""
@@ -30,7 +31,9 @@ def validate(
     # annotated what complies with the default ID
     matches = identifiers_idx.isin(field_values)
     if not mute:
-        _validate_logging(_validate_stats(identifiers=identifiers, matches=matches))
+        _validate_logging(
+            _validate_stats(identifiers=identifiers, matches=matches), field=field
+        )
     return matches
 
 
@@ -61,8 +64,11 @@ def _validate_stats(identifiers: Iterable, matches: "np.ndarray"):
     )
 
 
-def _validate_logging(result: "InspectResult"):
+def _validate_logging(result: "InspectResult", field: Optional[str] = None):
     """Logging of the validated result."""
+    field_msg = ""
+    if field is not None:
+        field_msg = f" for {colors.italic(field)}"
     empty_warn_msg = ""
     if result.n_empty > 0:
         unique_s = "" if result.n_unique == 1 else "s"
@@ -73,20 +79,26 @@ def _validate_logging(result: "InspectResult"):
         )
     s = "" if len(result.validated) == 1 else "s"
     are = "is" if len(result.validated) == 1 else "are"
-    success_msg = (
-        f"{len(result.validated)} term{s} ({result.frac_validated:.2f}%)"
-        f" {are} validated"
-    )
+    success_msg = ""
+    if len(result.validated) > 0:
+        success_msg = (
+            f"{colors.green(f'{len(result.validated)} term{s}')} ({result.frac_validated:.2f}%)"  # noqa
+            f" {are} validated{field_msg}"
+        )
     if result.frac_validated < 100:
         s = "" if len(result.non_validated) == 1 else "s"
         are = "is" if len(result.non_validated) == 1 else "are"
+        print_values = ", ".join(result.non_validated[:20])
+        if len(result.non_validated) > 20:
+            print_values += ", ..."
         warn_msg = (
-            f"{len(result.non_validated)} term{s} ({(100-result.frac_validated):.2f}%)"
-            f" {are} not validated"
+            f"{colors.yellow(f'{len(result.non_validated)} term{s}')} ({(100-result.frac_validated):.2f}%)"  # noqa
+            f" {are} not validated{field_msg}: {colors.yellow(print_values)}"
         )
         if len(empty_warn_msg) > 0:
             logger.warning(empty_warn_msg)
-        logger.success(success_msg)
+        if len(success_msg) > 0:
+            logger.success(success_msg)
         logger.warning(warn_msg)
     else:
         logger.success(success_msg)
@@ -160,7 +172,7 @@ def inspect(
             pass
 
     if not mute:
-        _validate_logging(result=result)
+        _validate_logging(result=result, field=field)
         warn_msg = ""
         hint = False
         if len(casing_warn_msg) > 0:
