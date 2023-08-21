@@ -167,6 +167,7 @@ def inspect(
                 field=field,
                 return_mapper=True,
                 case_sensitive=False,
+                mute=True,
             )
             if len(synonyms_mapper) > 0:
                 print_values = ", ".join(

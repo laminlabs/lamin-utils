@@ -10,6 +10,7 @@ def map_synonyms(
     *,
     case_sensitive: bool = False,
     return_mapper: bool = False,
+    mute: bool = False,
     synonyms_field: str = "synonyms",
     sep: str = "|",
     keep: Literal["first", "last", False] = "first",
@@ -94,6 +95,10 @@ def map_synonyms(
     # mapped synonyms will have values, otherwise NAs
     mapped_df.index = mapped_df["orig_ids"]
     mapped = mapped_df["__agg__"].map({**field_map.to_dict(), **syn_map})
+
+    n_mapped = (~mapped.isna()).sum()
+    if n_mapped > 0 and not mute:
+        logger.info(f"standardized {n_mapped}/{n_input} terms")
 
     if return_mapper:
         # only returns mapped synonyms
