@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Iterable, List, Optional
+from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
 
 from ._core import colors
 from ._logger import logger
@@ -23,6 +23,7 @@ def validate(
         mute = not kwargs.get("logging")
     import pandas as pd
 
+    identifiers = list(identifiers)
     identifiers_idx = pd.Index(identifiers)
     identifiers_idx = to_str(identifiers_idx, case_sensitive=case_sensitive)
 
@@ -129,13 +130,15 @@ def inspect(
         mute = not kwargs.get("logging")
     import pandas as pd
 
+    identifiers = list(identifiers)
     uniq_identifiers = _unique_rm_empty(pd.Index(identifiers)).tolist()
     # empty DataFrame or input
     if df.shape[0] == 0 or len(uniq_identifiers) == 0:
         result = _validate_stats(
             identifiers=identifiers, matches=[False] * len(identifiers)  # type:ignore
         )
-        _validate_logging(result=result, field=field)
+        if not mute:
+            _validate_logging(result=result, field=field)
         if kwargs.get("return_df") is True:
             return result.df
         else:
@@ -150,14 +153,12 @@ def inspect(
         identifiers=identifiers, field_values=df[field], case_sensitive=False, mute=True
     )
 
-    casing_warn_msg = ""
-    if noncs_matches.sum() > matches.sum():
-        casing_warn_msg = f"🟠 detected {colors.yellow('inconsistent casing')}"
+    msg_casing = "inconsistent casing/" if noncs_matches.sum() > matches.sum() else ""
 
     result = _validate_stats(identifiers=identifiers, matches=matches)
 
-    synonyms_warn_msg = ""
     # backward compat
+    info_msg = ""
     if kwargs.get("inspect_synonyms") is not False:
         try:
             synonyms_mapper = map_synonyms(
@@ -168,27 +169,25 @@ def inspect(
                 case_sensitive=False,
             )
             if len(synonyms_mapper) > 0:
-                synonyms_warn_msg = f"🟠 detected {colors.yellow('synonyms')}"
+                print_values = ", ".join(
+                    list(synonyms_mapper.keys())[:20]  # type:ignore
+                )
+                if len(synonyms_mapper) > 20:
+                    print_values += ", ..."
+                s = "" if len(synonyms_mapper) == 1 else "s"
+                info_msg = (
+                    f"detected {len(synonyms_mapper)} {msg_casing}synonym{s}:"
+                    f" {print_values}"
+                )
+                result._synonyms_mapper = synonyms_mapper
+
         except Exception:
             pass
-
     if not mute:
         _validate_logging(result=result, field=field)
-        warn_msg = ""
-        hint = False
-        if len(casing_warn_msg) > 0:
-            warn_msg += f"\n   {casing_warn_msg}"
-            hint = True
-        if len(synonyms_warn_msg) > 0:
-            warn_msg += f"\n   {synonyms_warn_msg}"
-            hint = True
-        if hint:
-            warn_msg += (
-                "\n   to increase validated terms, run"
-                f" {colors.green('.standardize()')}"
-            )
-        if len(warn_msg) > 0:
-            logger.warning(warn_msg)
+        if len(info_msg) > 0:
+            logger.info(f"-- {info_msg}")
+            logger.hint(f"   standardize terms via {colors.italic('.standardize()')}")
 
     # backward compat
     if kwargs.get("return_df") is True:
@@ -215,6 +214,7 @@ class InspectResult:
         self._frac_validated = frac_validated
         self._n_empty = n_empty
         self._n_unique = n_unique
+        self._synonyms_mapper: Dict = {}
 
     @property
     def df(self) -> "pd.DataFrame":
@@ -240,6 +240,10 @@ class InspectResult:
     @property
     def n_unique(self) -> int:
         return self._n_unique
+
+    @property
+    def synonyms_mapper(self) -> Dict:
+        return self._synonyms_mapper
 
     def __getitem__(self, key) -> List[str]:
         """Bracket access to the inspect result."""
