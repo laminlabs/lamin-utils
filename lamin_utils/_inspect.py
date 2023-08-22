@@ -176,10 +176,10 @@ def inspect(
                 if len(synonyms_mapper) > 20:
                     print_values += ", ..."
                 s = "" if len(synonyms_mapper) == 1 else "s"
-                info_msg = (
-                    f"detected {len(synonyms_mapper)} {msg_casing}synonym{s}:"
-                    f" {print_values}"
+                labels = colors.yellow(
+                    f"{len(synonyms_mapper)} terms with {msg_casing}synonym{s}"
                 )
+                info_msg = f"detected {labels}: {colors.yellow(print_values)}"
                 result._synonyms_mapper = synonyms_mapper
 
         except Exception:
@@ -187,8 +187,8 @@ def inspect(
     if not mute:
         _validate_logging(result=result, field=field)
         if len(info_msg) > 0:
-            logger.info(f"-- {info_msg}")
-            logger.hint(f"   standardize terms via {colors.italic('.standardize()')}")
+            logger.info(f"   {info_msg}")
+            logger.hint(f"→  standardize terms via {colors.italic('.standardize()')}")
 
     # backward compat
     if kwargs.get("return_df") is True:
