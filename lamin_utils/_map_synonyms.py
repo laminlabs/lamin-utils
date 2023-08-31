@@ -69,6 +69,7 @@ def map_synonyms(
 
     # __agg__ is a column of identifiers based on case_sensitive
     df["__agg__"] = to_str(df[field], case_sensitive=case_sensitive)
+    # field_map is {"__agg__": field_value} for mappable values
     field_map = pd.merge(mapped_df, df, on="__agg__").set_index("__agg__")[field]
 
     # only runs if synonyms mapping is needed
@@ -88,7 +89,10 @@ def map_synonyms(
             syn_map.index = syn_map.index.str.lower()
             # TODO: allow returning duplicated entries
             syn_map = syn_map[syn_map.index.drop_duplicates()]
-        syn_map = syn_map.to_dict()
+        # if values are already in field_map, do not apply synonyms mapping
+        syn_map = {
+            k: v for k, v in syn_map.to_dict().items() if k not in field_map.index
+        }
     else:
         syn_map = {}
 

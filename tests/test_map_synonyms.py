@@ -32,7 +32,7 @@ def genes():
         },
         {
             "symbol": "GCLC",
-            "synonyms": "GCS",
+            "synonyms": "GCS|BRCA1",
         },
         {
             "symbol": "UGCG",
@@ -184,6 +184,7 @@ def test_explode_aggregated_column_to_map(genes):
         "ACF65": "A1CF",
         "APOBEC1CF": "A1CF",
         "ASP": "A1CF",
+        "BRCA1": "GCLC",
         "BRCC1": "BRCA1",
         "BRCC2": "BRCA2",
         "FACD": "BRCA2",
