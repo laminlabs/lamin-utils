@@ -7,7 +7,7 @@ def search(
     df: Any,
     string: str,
     field: str = "name",
-    limit: Optional[int] = None,
+    limit: Optional[int] = 20,
     synonyms_field: Union[str, None] = "synonyms",
     case_sensitive: bool = False,
     synonyms_sep: str = "|",
@@ -44,7 +44,7 @@ def search(
         results = process.extract(
             string,
             iterable,
-            scorer=fuzz.ratio,
+            scorer=fuzz.WRatio,
             limit=limit,
             processor=processor,
         )
