@@ -116,8 +116,13 @@ class Lookup:
         """Dictionary of the lookup."""
         return self._df_dict
 
-    def lookup(self) -> Tuple:
+    def lookup(self, return_field: Optional[str] = None) -> Tuple:
         """Lookup records with dot access."""
         keys: List = list(self._lookup_dict.keys()) + ["dict"]
         MyTuple = namedtuple("Lookup", keys)  # type:ignore
+        if return_field is not None:
+            self._lookup_dict = {
+                k: v.__getattribute__(return_field)
+                for k, v in self._lookup_dict.items()
+            }
         return MyTuple(**self._lookup_dict, dict=self.dict)  # type:ignore
