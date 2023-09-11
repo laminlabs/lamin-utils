@@ -60,7 +60,6 @@ VERBOSITY_TO_LOGLEVEL = {
 
 
 LEVEL_TO_ICONS = {
-    41: "💡",  # PRINT
     40: "❌",  # error
     31: "💡",  # important
     30: "❗",  # warning
@@ -162,7 +161,10 @@ class _LogFormatter(logging.Formatter):
         if platform.system() == "Windows":
             return f"{record.levelname}:" + " {message}"
         else:
-            return f"{LEVEL_TO_ICONS[record.levelno]}" + " {message}"
+            if LEVEL_TO_ICONS.get(record.levelno) is not None:
+                return f"{LEVEL_TO_ICONS[record.levelno]}" + " {message}"
+            else:
+                return "{message}"
 
     def format(self, record: logging.LogRecord):
         format_orig = self._style._fmt
