@@ -40,10 +40,14 @@ from typing import Optional
 HINT = 15
 SAVE = 21
 SUCCESS = 25
-PRINT = 41
+PRINT = 41  # always print
+IMPORTANT = 31  # at warning level
 logging.addLevelName(HINT, "HINT")
 logging.addLevelName(SAVE, "SAVE")
 logging.addLevelName(SUCCESS, "SUCCESS")
+logging.addLevelName(PRINT, "PRINT")
+logging.addLevelName(IMPORTANT, "IMPORTANT")
+
 
 VERBOSITY_TO_LOGLEVEL = {
     0: "ERROR",  # 40
@@ -58,6 +62,7 @@ VERBOSITY_TO_LOGLEVEL = {
 LEVEL_TO_ICONS = {
     41: "💡",  # PRINT
     40: "❌",  # error
+    31: "💡",  # important
     30: "❗",  # warning
     25: "✅",  # success
     21: "✅",  # save
@@ -120,6 +125,9 @@ class RootLogger(logging.RootLogger):
 
     def warning(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
         return self.log(WARNING, msg, time=time, deep=deep, extra=extra)
+
+    def important(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+        return self.log(IMPORTANT, msg, time=time, deep=deep, extra=extra)
 
     def success(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
         return self.log(SUCCESS, msg, time=time, deep=deep, extra=extra)
