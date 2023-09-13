@@ -31,7 +31,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """Logging and Profiling."""
 import logging
-import platform
+
+# import platform
 import sys
 from datetime import datetime, timedelta, timezone
 from logging import CRITICAL, DEBUG, ERROR, INFO, WARNING, getLevelName
@@ -158,13 +159,13 @@ class _LogFormatter(logging.Formatter):
         super().__init__(fmt, datefmt, style)
 
     def base_format(self, record: logging.LogRecord):
-        if platform.system() == "Windows":
-            return f"{record.levelname}:" + " {message}"
+        # if platform.system() == "Windows":
+        #     return f"{record.levelname}:" + " {message}"
+        # else:
+        if LEVEL_TO_ICONS.get(record.levelno) is not None:
+            return f"{LEVEL_TO_ICONS[record.levelno]}" + " {message}"
         else:
-            if LEVEL_TO_ICONS.get(record.levelno) is not None:
-                return f"{LEVEL_TO_ICONS[record.levelno]}" + " {message}"
-            else:
-                return "{message}"
+            return "{message}"
 
     def format(self, record: logging.LogRecord):
         format_orig = self._style._fmt
