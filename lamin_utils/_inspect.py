@@ -187,8 +187,8 @@ def inspect(
     if not mute:
         _validate_logging(result=result, field=field)
         if len(info_msg) > 0:
-            logger.info(f"   {info_msg}")
-            logger.hint(f"→  standardize terms via {colors.italic('.standardize()')}")
+            logger.print(f"   {info_msg}")
+            logger.print(f"→  standardize terms via {colors.italic('.standardize()')}")
 
     # backward compat
     if kwargs.get("return_df") is True:
