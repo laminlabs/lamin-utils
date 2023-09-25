@@ -32,9 +32,10 @@ def validate(
     # annotated what complies with the default ID
     matches = identifiers_idx.isin(field_values)
     if not mute:
-        _validate_logging(
-            _validate_stats(identifiers=identifiers, matches=matches), field=field
-        )
+        if len(identifiers) > 0:
+            _validate_logging(
+                _validate_stats(identifiers=identifiers, matches=matches), field=field
+            )
     return matches
 
 
