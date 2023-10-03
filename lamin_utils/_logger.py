@@ -38,6 +38,11 @@ from datetime import datetime, timedelta, timezone
 from logging import CRITICAL, DEBUG, ERROR, INFO, WARNING, getLevelName
 from typing import Optional
 
+# sys.stdout inside jupyter doesn't have reconfigure
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(errors="backslashreplace")  # type: ignore
+
+
 HINT = 15
 SAVE = 21
 SUCCESS = 25
