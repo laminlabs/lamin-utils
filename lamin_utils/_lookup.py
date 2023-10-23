@@ -2,6 +2,8 @@ import re
 from collections import namedtuple
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
+from ._logger import logger
+
 
 def _append_records_to_list(df_dict: Dict, value: str, record) -> None:
     """Append unique records to a list."""
@@ -59,6 +61,11 @@ class Lookup:
     ) -> None:
         self._tuple_name = tuple_name
         if df is not None:
+            if df.shape[0] > 500000:
+                logger.warning(
+                    "generating lookup object from >500k keys is not recommended and"
+                    " extremely slow"
+                )
             values = df[field]
         self._df_dict = _create_df_dict(
             df=df,
@@ -69,6 +76,7 @@ class Lookup:
         )
         lkeys = self._to_lookup_keys(values=values, prefix=prefix)  # type:ignore
         self._lookup_dict = self._create_lookup_dict(lkeys=lkeys, df_dict=self._df_dict)
+        self._prefix = prefix
 
     def _to_lookup_keys(self, values: Iterable, prefix: str) -> Dict:
         """Convert a list of strings to tab-completion allowed formats.
@@ -118,6 +126,11 @@ class Lookup:
 
     def lookup(self, return_field: Optional[str] = None) -> Tuple:
         """Lookup records with dot access."""
+        # Names are invalid if they are conflict with Python keywords.
+        if "class" in self._lookup_dict:
+            self._lookup_dict[f"{self._prefix.lower()}_class"] = self._lookup_dict.pop(
+                "class"
+            )
         keys: List = list(self._lookup_dict.keys()) + ["dict"]
         MyTuple = namedtuple("Lookup", keys)  # type:ignore
         if return_field is not None:
