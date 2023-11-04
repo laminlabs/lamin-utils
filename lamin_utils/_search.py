@@ -31,7 +31,7 @@ def search(
 
     from ._map_synonyms import explode_aggregated_column_to_map
 
-    def _fuzz_ratio(
+    def _fuzz(
         string: str,
         iterable: pd.Series,
         case_sensitive: bool = True,
@@ -39,12 +39,17 @@ def search(
     ):
         from rapidfuzz import fuzz, process, utils
 
-        processor = None if case_sensitive else utils.default_process
+        # use WRatio to account for typos
+        if " " in string:
+            scorer = fuzz.token_set_ratio
+        else:
+            scorer = fuzz.WRatio
 
+        processor = None if case_sensitive else utils.default_process
         results = process.extract(
             string,
             iterable,
-            scorer=fuzz.WRatio,
+            scorer=scorer,
             limit=limit,
             processor=processor,
         )
@@ -86,7 +91,7 @@ def search(
         target_column = field
 
     # add matching scores as a __ratio__ column
-    ratios = _fuzz_ratio(
+    ratios = _fuzz(
         string=string,
         iterable=df_exp[target_column],
         case_sensitive=case_sensitive,
