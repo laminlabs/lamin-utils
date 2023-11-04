@@ -41,7 +41,7 @@ def search(
 
         # use WRatio to account for typos
         if " " in string:
-            scorer = fuzz.token_set_ratio
+            scorer = fuzz.QRatio
         else:
             scorer = fuzz.WRatio
 
