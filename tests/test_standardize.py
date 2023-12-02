@@ -207,6 +207,7 @@ def test_explode_aggregated_column_to_map(genes):
         "APOBEC1CF": "A1CF",
         "ASP": "A1CF",
         "BRCA1": "GCLC",
+        "BRCA1-1-synonym": "BRCA1-1",
         "BRCC1": "BRCA1",
         "BRCC2": "BRCA2",
         "FACD": "BRCA2",

@@ -44,6 +44,12 @@ def standardize(
         - If return_mapper is True: a dictionary of mapped values with mappable
             identifiers as keys and values mapped to field as values.
     """
+    if df.shape[0] == 0 or len(identifiers) == 0:  # type: ignore
+        if return_mapper:
+            return {}
+        else:
+            return identifiers  # type: ignore
+
     # default return_field to field if not specified
     return_field = field if return_field is None else return_field
 
@@ -60,10 +66,11 @@ def standardize(
         keep=keep,
     )
 
-    if return_field == field or len(result) == 0:
+    if return_field == field:
         return result
 
     # convert identifiers to return_field
+    # always get the full list of values (identifiers)
     if return_mapper:
         values = map_synonyms(
             df=df,
@@ -79,6 +86,7 @@ def standardize(
         )
     else:
         values = result
+
     # no values can be converted
     if len(values) == 0:
         if not mute:
@@ -103,6 +111,7 @@ def standardize(
             .agg(lambda x: list(x) if len(x) > 1 else x.iloc[0])
             .to_dict()
         )
+
     if return_mapper:
         # deals with the case where the mapper is a list
         return_dict: Dict = {}
