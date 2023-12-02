@@ -290,7 +290,7 @@ def test_standardize_keep(genes):
     ) == {
         "FANCD1": "ENSG00000139618",
         "A1CF": "ENSG00000148584",
-        "BRCA1-1": "ENSG00000012048-2",
+        "BRCA1-1": "ENSG00000012048-1-1",
     }
     assert standardize(
         df,
