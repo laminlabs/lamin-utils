@@ -7,6 +7,7 @@ from lamin_utils._map_synonyms import (
     not_empty_none_na,
     to_str,
 )
+from lamin_utils._standardize import standardize
 
 
 @pytest.fixture(scope="module")
@@ -17,26 +18,47 @@ def genes():
         {
             "symbol": "BRCA1",
             "synonyms": "PPP1R53|RNF53|FANCS|BRCC1",
+            "ensembl_gene_id": "ENSG00000012048",
         },
         {
             "symbol": "A1BG",
             "synonyms": "",
+            "ensembl_gene_id": "ENSG00000121410",
         },
         {
             "symbol": "BRCA2",
             "synonyms": "FAD|FAD1|BRCC2|FANCD1|FACD|FANCD|XRCC11",
+            "ensembl_gene_id": "ENSG00000139618",
         },
         {
             "symbol": "A1CF",
             "synonyms": "ACF|ACF64|APOBEC1CF|ACF65|ASP",
+            "ensembl_gene_id": "ENSG00000148584",
         },
         {
             "symbol": "GCLC",
             "synonyms": "GCS|BRCA1",
+            "ensembl_gene_id": "ENSG00000164889",
         },
         {
             "symbol": "UGCG",
             "synonyms": "GCS",
+            "ensembl_gene_id": "ENSG00000164889",
+        },
+        {
+            "symbol": "BRCA1-1",
+            "synonyms": "BRCA1-1-synonym",
+            "ensembl_gene_id": "ENSG00000012048-1",
+        },
+        {
+            "symbol": "BRCA1-1",
+            "synonyms": "BRCA1-1-synonym",
+            "ensembl_gene_id": "ENSG00000012048-1-1",
+        },
+        {
+            "symbol": "BRCA1-2",
+            "synonyms": "BRCA1-1-synonym",
+            "ensembl_gene_id": "ENSG00000012048-2",
         },
     ]
 
@@ -217,3 +239,82 @@ def test_to_str_categorical_series():
     df[0] = df[0].astype("category")
 
     assert to_str(df[0]).tolist() == ["", "", "a"]
+
+
+def test_standardize(genes):
+    gene_symbols, df = genes
+    assert standardize(
+        df, identifiers=gene_symbols, field="symbol", return_field="ensembl_gene_id"
+    ) == [
+        "ENSG00000148584",
+        "ENSG00000121410",
+        "ENSG00000139618",
+        "FANCD20",
+        "ENSG00000164889",
+    ]
+    assert standardize(
+        df,
+        identifiers=gene_symbols,
+        field="symbol",
+        return_field="ensembl_gene_id",
+        return_mapper=True,
+    ) == {
+        "FANCD1": "ENSG00000139618",
+        "GCS": "ENSG00000164889",
+        "A1BG": "ENSG00000121410",
+        "A1CF": "ENSG00000148584",
+    }
+
+
+def test_standardize_keep(genes):
+    _, df = genes
+    assert standardize(
+        df,
+        identifiers=["A1CF", "FANCD1", "BRCA1-1"],
+        field="symbol",
+        return_field="ensembl_gene_id",
+        return_mapper=True,
+    ) == {
+        "FANCD1": "ENSG00000139618",
+        "A1CF": "ENSG00000148584",
+        "BRCA1-1": "ENSG00000012048-1",
+    }
+    assert standardize(
+        df,
+        identifiers=["A1CF", "FANCD1", "BRCA1-1"],
+        field="symbol",
+        return_field="ensembl_gene_id",
+        return_mapper=True,
+        keep="last",
+    ) == {
+        "FANCD1": "ENSG00000139618",
+        "A1CF": "ENSG00000148584",
+        "BRCA1-1": "ENSG00000012048-2",
+    }
+    assert standardize(
+        df,
+        identifiers=["A1CF", "FANCD1", "BRCA1-1-synonym"],
+        field="symbol",
+        return_field="ensembl_gene_id",
+        keep=False,
+        return_mapper=True,
+    ) == {
+        "FANCD1": "ENSG00000139618",
+        "BRCA1-1-synonym": [
+            "ENSG00000012048-1",
+            "ENSG00000012048-1-1",
+            "ENSG00000012048-2",
+        ],
+        "A1CF": "ENSG00000148584",
+    }
+    assert standardize(
+        df,
+        identifiers=["A1CF", "FANCD1", "BRCA1-1"],
+        field="symbol",
+        return_field="ensembl_gene_id",
+        keep=False,
+    ) == [
+        "ENSG00000148584",
+        "ENSG00000139618",
+        ["ENSG00000012048-1", "ENSG00000012048-1-1"],
+    ]

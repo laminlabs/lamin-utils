@@ -14,6 +14,7 @@ def map_synonyms(
     synonyms_field: str = "synonyms",
     sep: str = "|",
     keep: Literal["first", "last", False] = "first",
+    mute_warning: bool = False,
 ) -> Union[Dict[str, str], List[str]]:
     """Maps input identifiers against a concatenated synonyms column.
 
@@ -109,9 +110,10 @@ def map_synonyms(
         mapper = mapped[~mapped.isna()].to_dict()
         mapper = {k: v for k, v in mapper.items() if k != v}
         if keep is False:
-            logger.warning(
-                "returning mapper might contain lists as values when 'keep=False'"
-            )
+            if not mute_warning:
+                logger.warning(
+                    "returning mapper might contain lists as values when 'keep=False'"
+                )
             return {k: v[0] if len(v) == 1 else v for k, v in mapper.items()}
         else:
             return mapper
@@ -119,7 +121,8 @@ def map_synonyms(
         # returns a list in the input order with synonyms replaced
         mapped_list = mapped.fillna(mapped_df["orig_ids"]).tolist()
         if keep is False:
-            logger.warning("returning list might contain lists when 'keep=False'")
+            if not mute_warning:
+                logger.warning("returning list might contain lists when 'keep=False'")
             return [
                 v[0] if isinstance(v, list) and len(v) == 1 else v for v in mapped_list
             ]
