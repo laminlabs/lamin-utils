@@ -54,6 +54,15 @@ def _validate_stats(identifiers: Iterable, matches: "np.ndarray"):
     nonval = _unique_rm_empty(df_val.index[~df_val["__validated__"]]).tolist()
 
     n_unique = len(val) + len(nonval)
+    if n_unique == 0:
+        return InspectResult(
+            validated_df=df_val,
+            validated=val,
+            nonvalidated=nonval,
+            frac_validated=0,
+            n_empty=0,
+            n_unique=0,
+        )
     n_empty = df_val.shape[0] - n_unique
     frac_nonval = round(len(nonval) / n_unique * 100, 1)
     frac_val = 100 - frac_nonval
