@@ -129,6 +129,16 @@ def test_inspect_empty_dup_input(genes):
     assert result.non_validated == []
 
 
+def test_inspect_zero_identifiers():
+    result = inspect(
+        df=pd.DataFrame(),
+        identifiers=pd.Series([]),
+        field="symbol",
+    )
+    assert result.validated == []
+    assert result.non_validated == []
+
+
 def test_inspect_empty_df():
     import numpy as np
     import pandas as pd
