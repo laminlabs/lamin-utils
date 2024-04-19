@@ -228,21 +228,18 @@ def set_verbosity(logger, verbosity: int):
 RootLogger.set_verbosity = set_verbosity  # type: ignore
 
 
-def silence(logger):
-    """Context manager to set verbosity to low during its context."""
+def mute(logger):
+    """Context manager to mute logger."""
 
-    class Silenced:
+    class Muted:
         def __enter__(self):
-            # Store the current verbosity level
             self.original_verbosity = logger._verbosity
-            # Set the verbosity level to 0
             logger.set_verbosity(0)
 
         def __exit__(self, exc_type, exc_val, exc_tb):
-            # Reset the verbosity level to its original state
             logger.set_verbosity(self.original_verbosity)
 
-    return Silenced()
+    return Muted()
 
 
-RootLogger.silence = silence  # type: ignore
+RootLogger.mute = mute  # type: ignore
