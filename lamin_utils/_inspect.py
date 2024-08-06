@@ -211,7 +211,10 @@ def inspect(
 
 
 class InspectResult:
-    """Result of inspect."""
+    """Result of inspect.
+
+    An InspectResult object of calls such as :meth:`lamindb.core.CanValidate.inspect`.
+    """
 
     def __init__(
         self,
@@ -237,26 +240,46 @@ class InspectResult:
 
     @property
     def validated(self) -> List[str]:
+        """List of successfully :meth:`lamindb.Curate.validate` validated items."""
         return self._validated
 
     @property
     def non_validated(self) -> List[str]:
+        """List of unsuccessfully :meth:`lamindb.Curate.validate` items.
+
+        This list can be used to remove any non-validated values such as
+        genes that do not map against the specified source.
+        """
         return self._non_validated
 
     @property
     def frac_validated(self) -> float:
+        """Fraction of items that were validated."""
         return self._frac_validated
 
     @property
     def n_empty(self) -> int:
+        """Number of empty items."""
         return self._n_empty
 
     @property
     def n_unique(self) -> int:
+        """Number of unique items."""
         return self._n_unique
 
     @property
-    def synonyms_mapper(self) -> Dict:
+    def synonyms_mapper(self) -> dict:
+        """Synonyms mapper dictionary.
+
+        Such a dictionary maps the actual values to their synonyms
+        which can be used to rename values accordingly.
+
+        Examples:
+            >>> markers = pd.DataFrame(index=["KI67","CCR7"])
+            >>> synonyms_mapper = bt.CellMarker.standardize(markers.index, return_mapper=True)
+
+            {'KI67': 'Ki67', 'CCR7': 'Ccr7'}
+        """
         return self._synonyms_mapper
 
     def __getitem__(self, key) -> List[str]:
