@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Literal
 
 from lamin_utils import logger
 
@@ -17,7 +17,7 @@ def search(
     case_sensitive: bool = False,
     synonyms_sep: str = "|",
     keep: Literal["first", "last", False] = "first",
-) -> Any:
+) -> pd.DataFrame:
     """Search a given string against a field.
 
     Args:
@@ -34,6 +34,9 @@ def search(
 
     Returns:
         A DataFrame of ranked search results.
+        This DataFrame contains the matched rows from the input DataFrame,
+        sorted by the match ratio in descending order.
+        It includes all columns from the input DataFrame plus an additional '__ratio__' column indicating the match score.
 
     Raises:
         KeyError: If the specified field or synonyms_field is not found in the DataFrame.

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from itertools import chain
 from typing import Any, Dict, Iterable, List, Literal, Union
 
@@ -17,7 +19,7 @@ def standardize(
     synonyms_field: str = "synonyms",
     sep: str = "|",
     keep: Literal["first", "last", False] = "first",
-) -> Union[Dict[str, str], List[str]]:
+) -> dict[str, str] | list[str]:
     """Standardizes input identifiers against a concatenated synonyms column.
 
     Will also standardize casing.
@@ -114,7 +116,7 @@ def standardize(
 
     if return_mapper:
         # deals with the case where the mapper is a list
-        return_dict: Dict = {}
+        return_dict: dict = {}
         for k, v in result.items():  # type: ignore
             if isinstance(v, list):
                 return_dict[k] = []

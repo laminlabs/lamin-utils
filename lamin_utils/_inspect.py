@@ -1,11 +1,14 @@
-from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
+from __future__ import annotations
 
-import numpy as np
-import pandas as pd
+from typing import TYPE_CHECKING, Iterable
 
 from ._core import colors
 from ._logger import logger
 from ._map_synonyms import map_synonyms, to_str
+
+if TYPE_CHECKING:
+    import numpy as np
+    import pandas as pd
 
 
 class InspectResult:
@@ -17,8 +20,8 @@ class InspectResult:
     def __init__(
         self,
         validated_df: pd.DataFrame,
-        validated: List[str],
-        nonvalidated: List[str],
+        validated: list[str],
+        nonvalidated: list[str],
         frac_validated: float,
         n_empty: int,
         n_unique: int,
@@ -29,7 +32,7 @@ class InspectResult:
         self._frac_validated = frac_validated
         self._n_empty = n_empty
         self._n_unique = n_unique
-        self._synonyms_mapper: Dict = {}
+        self._synonyms_mapper: dict = {}
 
     @property
     def df(self) -> pd.DataFrame:
@@ -37,12 +40,12 @@ class InspectResult:
         return self._df
 
     @property
-    def validated(self) -> List[str]:
+    def validated(self) -> list[str]:
         """List of successfully :meth:`lamindb.Curate.validate` validated items."""
         return self._validated
 
     @property
-    def non_validated(self) -> List[str]:
+    def non_validated(self) -> list[str]:
         """List of unsuccessfully :meth:`lamindb.Curate.validate` items.
 
         This list can be used to remove any non-validated values such as
@@ -80,7 +83,7 @@ class InspectResult:
         """
         return self._synonyms_mapper
 
-    def __getitem__(self, key) -> List[str]:
+    def __getitem__(self, key) -> list[str]:
         """Bracket access to the inspect result."""
         if key == "validated":
             return self.validated
@@ -101,7 +104,7 @@ def validate(
     *,
     case_sensitive: bool = True,
     mute: bool = False,
-    field: Optional[str] = None,
+    field: str | None = None,
     **kwargs,
 ) -> np.ndarray:
     """Check if elements in an iterable are present in a list of values.
@@ -182,7 +185,7 @@ def _validate_stats(identifiers: Iterable, matches: np.ndarray):
     )
 
 
-def _validate_logging(result: InspectResult, field: Optional[str] = None) -> None:
+def _validate_logging(result: InspectResult, field: str | None = None) -> None:
     """Logging of the validated result to stdout."""
     field_msg = ""
     if field is not None:

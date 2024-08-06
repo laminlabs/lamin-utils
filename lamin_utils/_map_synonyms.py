@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, Literal, Union
+from typing import TYPE_CHECKING, Iterable, Literal
 
 from ._logger import logger
 
@@ -135,7 +135,9 @@ def map_synonyms(
             return mapped_list
 
 
-def to_str(identifiers: Any, case_sensitive: bool = False) -> pd.Series:
+def to_str(
+    identifiers: pd.Series | pd.Index | pd.Categorical, case_sensitive: bool = False
+) -> pd.Series:
     """Convert a pandas series values to strings with case sensitive option."""
     if identifiers.dtype.name == "category":
         try:
