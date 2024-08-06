@@ -30,6 +30,7 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """Logging and Profiling."""
+
 import logging
 
 # import platform
@@ -122,38 +123,38 @@ class RootLogger(logging.RootLogger):
         super().log(level, msg, extra=extra)
         return now
 
-    def critical(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+    def critical(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
         return self.log(CRITICAL, msg, time=time, deep=deep, extra=extra)
 
-    def error(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+    def error(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
         return self.log(ERROR, msg, time=time, deep=deep, extra=extra)
 
-    def warning(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+    def warning(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
         return self.log(WARNING, msg, time=time, deep=deep, extra=extra)
 
-    def important(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+    def important(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
         return self.log(IMPORTANT, msg, time=time, deep=deep, extra=extra)
 
-    def success(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+    def success(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
         return self.log(SUCCESS, msg, time=time, deep=deep, extra=extra)
 
-    def info(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+    def info(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
         return self.log(INFO, msg, time=time, deep=deep, extra=extra)
 
-    def save(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+    def save(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
         return self.log(SAVE, msg, time=time, deep=deep, extra=extra)
 
-    def hint(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+    def hint(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
         return self.log(HINT, msg, time=time, deep=deep, extra=extra)
 
-    def debug(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+    def debug(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
         return self.log(DEBUG, msg, time=time, deep=deep, extra=extra)
 
-    def print(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+    def print(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
         return self.log(PRINT, msg, time=time, deep=deep, extra=extra)
 
     # backward compat
-    def download(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore  # noqa
+    def download(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
         return self.log(SAVE, msg, time=time, deep=deep, extra=extra)
 
 
@@ -178,7 +179,8 @@ class _LogFormatter(logging.Formatter):
         if record.time_passed:  # type: ignore
             if "{time_passed}" in record.msg:
                 record.msg = record.msg.replace(
-                    "{time_passed}", record.time_passed  # type: ignore
+                    "{time_passed}",
+                    record.time_passed,  # type: ignore
                 )
             else:
                 self._style._fmt += " ({time_passed})"

@@ -135,7 +135,7 @@ def standardize(
                 for k, v in mapper.items()
                 if k
                 not in set(
-                    chain(*[v if isinstance(v, list) else [v] for v in result.values()])  # type: ignore # noqa
+                    chain(*[v if isinstance(v, list) else [v] for v in result.values()])  # type: ignore
                 )
             }
         )

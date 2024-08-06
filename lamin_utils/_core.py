@@ -1,18 +1,18 @@
 # ANSI color code: https://gist.github.com/iansan5653/c4a0b9f5c30d74258c5f132084b78db9
-ANSI_COLORS = dict(
-    bold="\x1b[1m",
-    italic="\x1b[3m",
-    underline="\x1b[4m",
-    black="\x1b[1;90m",
-    red="\x1b[1;91m",
-    green="\x1b[1;92m",
-    yellow="\x1b[1;93m",
-    blue="\x1b[1;94m",
-    purple="\x1b[1;95m",
-    cyan="\x1b[1;96m",
-    white="\x1b[1;97m",
-    reset="\x1b[0m",
-)
+ANSI_COLORS = {
+    "bold": "\x1b[1m",
+    "italic": "\x1b[3m",
+    "underline": "\x1b[4m",
+    "black": "\x1b[1;90m",
+    "red": "\x1b[1;91m",
+    "green": "\x1b[1;92m",
+    "yellow": "\x1b[1;93m",
+    "blue": "\x1b[1;94m",
+    "purple": "\x1b[1;95m",
+    "cyan": "\x1b[1;96m",
+    "white": "\x1b[1;97m",
+    "reset": "\x1b[0m",
+}
 
 
 class colors:

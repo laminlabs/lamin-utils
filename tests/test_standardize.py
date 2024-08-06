@@ -1,6 +1,5 @@
 import pandas as pd
 import pytest
-
 from lamin_utils._map_synonyms import (
     explode_aggregated_column_to_map,
     map_synonyms,

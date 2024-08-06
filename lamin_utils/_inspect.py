@@ -95,7 +95,7 @@ def _validate_logging(result: "InspectResult", field: Optional[str] = None):
     success_msg = ""
     if len(result.validated) > 0:
         success_msg = (
-            f"{colors.green(f'{len(result.validated)} term{s}')} ({result.frac_validated:.2f}%)"  # noqa
+            f"{colors.green(f'{len(result.validated)} term{s}')} ({result.frac_validated:.2f}%)"
             f" {are} validated{field_msg}"
         )
     if result.frac_validated < 100:
@@ -105,7 +105,7 @@ def _validate_logging(result: "InspectResult", field: Optional[str] = None):
         if len(result.non_validated) > 20:
             print_values += ", ..."
         warn_msg = (
-            f"{colors.yellow(f'{len(result.non_validated)} term{s}')} ({(100-result.frac_validated):.2f}%)"  # noqa
+            f"{colors.yellow(f'{len(result.non_validated)} term{s}')} ({(100-result.frac_validated):.2f}%)"
             f" {are} not validated{field_msg}: {colors.yellow(print_values)}"
         )
         if len(empty_warn_msg) > 0:
@@ -147,7 +147,8 @@ def inspect(
     # empty DataFrame or input
     if df.shape[0] == 0 or len(uniq_identifiers) == 0:
         result = _validate_stats(
-            identifiers=identifiers, matches=[False] * len(identifiers)  # type:ignore
+            identifiers=identifiers,
+            matches=[False] * len(identifiers),  # type:ignore
         )
         if not mute:
             _validate_logging(result=result, field=field)
@@ -194,7 +195,7 @@ def inspect(
                 info_msg = f"detected {labels}: {colors.yellow(print_values)}"
                 result._synonyms_mapper = synonyms_mapper
 
-        except Exception:
+        except Exception:  # noqa: S110
             pass
     if not mute:
         _validate_logging(result=result, field=field)
@@ -231,7 +232,7 @@ class InspectResult:
 
     @property
     def df(self) -> "pd.DataFrame":
-        """A DataFrame indexed by values with a boolean `__validated__` column."""  # noqa
+        """A DataFrame indexed by values with a boolean `__validated__` column."""
         return self._df
 
     @property

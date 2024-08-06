@@ -1,6 +1,5 @@
 import pandas as pd
 import pytest
-
 from lamin_utils._inspect import inspect, validate
 
 

@@ -1,6 +1,5 @@
-import pytest
-
 import lamin_utils._base62 as base62
+import pytest
 
 bytes_int_pairs = [
     (b"\x01", 1),
