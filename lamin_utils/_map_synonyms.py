@@ -1,10 +1,15 @@
-from typing import Any, Dict, Iterable, List, Literal, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Union
 
 from ._logger import logger
 
+if TYPE_CHECKING:
+    import pandas as pd
+
 
 def map_synonyms(
-    df: Any,
+    df: pd.DataFrame,
     identifiers: Iterable,
     field: str,
     *,
@@ -15,7 +20,7 @@ def map_synonyms(
     sep: str = "|",
     keep: Literal["first", "last", False] = "first",
     mute_warning: bool = False,
-) -> Union[Dict[str, str], List[str]]:
+) -> dict[str, str] | list[str]:
     """Maps input identifiers against a concatenated synonyms column.
 
     Will also standardize casing.
@@ -130,7 +135,7 @@ def map_synonyms(
             return mapped_list
 
 
-def to_str(identifiers: Any, case_sensitive: bool = False):
+def to_str(identifiers: Any, case_sensitive: bool = False) -> pd.Series:
     """Convert a pandas series values to strings with case sensitive option."""
     if identifiers.dtype.name == "category":
         try:
@@ -149,7 +154,7 @@ def to_str(identifiers: Any, case_sensitive: bool = False):
     return values
 
 
-def not_empty_none_na(values: Iterable):
+def not_empty_none_na(values: Iterable) -> pd.Series:
     """Return values that are not empty string, None or NA."""
     import pandas as pd
 
@@ -165,7 +170,7 @@ def explode_aggregated_column_to_map(
     target_col=str,
     keep: Literal["first", "last", False] = "first",
     sep: str = "|",
-):
+) -> pd.Series:
     """Explode values from an aggregated DataFrame column to map to a target column.
 
     Args:

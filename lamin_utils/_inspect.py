@@ -1,12 +1,98 @@
 from typing import TYPE_CHECKING, Dict, Iterable, List, Optional
 
+import numpy as np
+import pandas as pd
+
 from ._core import colors
 from ._logger import logger
 from ._map_synonyms import map_synonyms, to_str
 
-if TYPE_CHECKING:
-    import numpy as np
-    import pandas as pd
+
+class InspectResult:
+    """Result of inspect.
+
+    An InspectResult object of calls such as :meth:`~lamindb.core.CanValidate.inspect`.
+    """
+
+    def __init__(
+        self,
+        validated_df: pd.DataFrame,
+        validated: List[str],
+        nonvalidated: List[str],
+        frac_validated: float,
+        n_empty: int,
+        n_unique: int,
+    ) -> None:
+        self._df = validated_df
+        self._validated = validated
+        self._non_validated = nonvalidated
+        self._frac_validated = frac_validated
+        self._n_empty = n_empty
+        self._n_unique = n_unique
+        self._synonyms_mapper: Dict = {}
+
+    @property
+    def df(self) -> pd.DataFrame:
+        """A DataFrame indexed by values with a boolean `__validated__` column."""
+        return self._df
+
+    @property
+    def validated(self) -> List[str]:
+        """List of successfully :meth:`lamindb.Curate.validate` validated items."""
+        return self._validated
+
+    @property
+    def non_validated(self) -> List[str]:
+        """List of unsuccessfully :meth:`lamindb.Curate.validate` items.
+
+        This list can be used to remove any non-validated values such as
+        genes that do not map against the specified source.
+        """
+        return self._non_validated
+
+    @property
+    def frac_validated(self) -> float:
+        """Fraction of items that were validated."""
+        return self._frac_validated
+
+    @property
+    def n_empty(self) -> int:
+        """Number of empty items."""
+        return self._n_empty
+
+    @property
+    def n_unique(self) -> int:
+        """Number of unique items."""
+        return self._n_unique
+
+    @property
+    def synonyms_mapper(self) -> dict:
+        """Synonyms mapper dictionary.
+
+        Such a dictionary maps the actual values to their synonyms
+        which can be used to rename values accordingly.
+
+        Examples:
+            >>> markers = pd.DataFrame(index=["KI67","CCR7"])
+            >>> synonyms_mapper = bt.CellMarker.standardize(markers.index, return_mapper=True)
+
+            {'KI67': 'Ki67', 'CCR7': 'Ccr7'}
+        """
+        return self._synonyms_mapper
+
+    def __getitem__(self, key) -> List[str]:
+        """Bracket access to the inspect result."""
+        if key == "validated":
+            return self.validated
+        elif key == "non_validated":
+            return self.non_validated
+        # backward compatibility below
+        elif key == "mapped":
+            return self.validated
+        elif key == "not_mapped":
+            return self.non_validated
+        else:
+            raise KeyError("invalid key")
 
 
 def validate(
@@ -17,8 +103,27 @@ def validate(
     mute: bool = False,
     field: Optional[str] = None,
     **kwargs,
-) -> "np.ndarray":
-    """Check if an iterable is in a list of values with case sensitive option."""
+) -> np.ndarray:
+    """Check if elements in an iterable are present in a list of values.
+
+    This function validates whether each element in `identifiers` is present in `field_values`.
+    It returns a boolean numpy array indicating which elements are valid (True) or invalid (False).
+
+    Args:
+        identifiers: The iterable containing elements to be validated.
+        field_values: The iterable containing valid values to check against.
+        case_sensitive: If True, the comparison is case-sensitive.
+        mute: If True, suppresses logging output
+        field: Name of the field being validated, used in logging.
+        **kwargs: Additional keyword arguments.
+            logging: If provided as a boolean, overrides the 'mute' parameter.
+
+    Returns:
+        A boolean numpy array where True indicates a valid element and False an invalid one.
+
+    Notes:
+        - The function converts both `identifiers` and `field_values` to strings before comparison.
+    """
     if isinstance(kwargs.get("logging"), bool):
         mute = not kwargs.get("logging")
     import pandas as pd
@@ -41,12 +146,12 @@ def validate(
     return matches
 
 
-def _unique_rm_empty(idx: "pd.Index"):
+def _unique_rm_empty(idx: pd.Index):
     idx = idx.unique()
     return idx[(idx != "") & (~idx.isnull())]
 
 
-def _validate_stats(identifiers: Iterable, matches: "np.ndarray"):
+def _validate_stats(identifiers: Iterable, matches: np.ndarray):
     import pandas as pd
 
     df_val = pd.DataFrame(data={"__validated__": matches}, index=identifiers)
@@ -77,8 +182,8 @@ def _validate_stats(identifiers: Iterable, matches: "np.ndarray"):
     )
 
 
-def _validate_logging(result: "InspectResult", field: Optional[str] = None):
-    """Logging of the validated result."""
+def _validate_logging(result: InspectResult, field: Optional[str] = None) -> None:
+    """Logging of the validated result to stdout."""
     field_msg = ""
     if field is not None:
         field_msg = f" for {colors.italic(field)}"
@@ -118,13 +223,13 @@ def _validate_logging(result: "InspectResult", field: Optional[str] = None):
 
 
 def inspect(
-    df: "pd.DataFrame",
+    df: pd.DataFrame,
     identifiers: Iterable,
     field: str,
     *,
     mute: bool = False,
     **kwargs,
-) -> "InspectResult":
+) -> InspectResult:
     """Inspect if a list of identifiers are mappable to the entity reference.
 
     Args:
@@ -208,90 +313,3 @@ def inspect(
         return result.df
 
     return result
-
-
-class InspectResult:
-    """Result of inspect.
-
-    An InspectResult object of calls such as :meth:`lamindb.core.CanValidate.inspect`.
-    """
-
-    def __init__(
-        self,
-        validated_df: "pd.DataFrame",
-        validated: List[str],
-        nonvalidated: List[str],
-        frac_validated: float,
-        n_empty: int,
-        n_unique: int,
-    ) -> None:
-        self._df = validated_df
-        self._validated = validated
-        self._non_validated = nonvalidated
-        self._frac_validated = frac_validated
-        self._n_empty = n_empty
-        self._n_unique = n_unique
-        self._synonyms_mapper: Dict = {}
-
-    @property
-    def df(self) -> "pd.DataFrame":
-        """A DataFrame indexed by values with a boolean `__validated__` column."""
-        return self._df
-
-    @property
-    def validated(self) -> List[str]:
-        """List of successfully :meth:`lamindb.Curate.validate` validated items."""
-        return self._validated
-
-    @property
-    def non_validated(self) -> List[str]:
-        """List of unsuccessfully :meth:`lamindb.Curate.validate` items.
-
-        This list can be used to remove any non-validated values such as
-        genes that do not map against the specified source.
-        """
-        return self._non_validated
-
-    @property
-    def frac_validated(self) -> float:
-        """Fraction of items that were validated."""
-        return self._frac_validated
-
-    @property
-    def n_empty(self) -> int:
-        """Number of empty items."""
-        return self._n_empty
-
-    @property
-    def n_unique(self) -> int:
-        """Number of unique items."""
-        return self._n_unique
-
-    @property
-    def synonyms_mapper(self) -> dict:
-        """Synonyms mapper dictionary.
-
-        Such a dictionary maps the actual values to their synonyms
-        which can be used to rename values accordingly.
-
-        Examples:
-            >>> markers = pd.DataFrame(index=["KI67","CCR7"])
-            >>> synonyms_mapper = bt.CellMarker.standardize(markers.index, return_mapper=True)
-
-            {'KI67': 'Ki67', 'CCR7': 'Ccr7'}
-        """
-        return self._synonyms_mapper
-
-    def __getitem__(self, key) -> List[str]:
-        """Bracket access to the inspect result."""
-        if key == "validated":
-            return self.validated
-        elif key == "non_validated":
-            return self.non_validated
-        # backward compatibility below
-        elif key == "mapped":
-            return self.validated
-        elif key == "not_mapped":
-            return self.non_validated
-        else:
-            raise KeyError("invalid key")
