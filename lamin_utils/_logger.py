@@ -67,15 +67,29 @@ VERBOSITY_TO_LOGLEVEL = {
 
 
 LEVEL_TO_ICONS = {
-    40: "❌",  # error
-    31: "💡",  # important
-    30: "❗",  # warning
-    25: "✅",  # success
-    21: "✅",  # save
-    20: "💡",  # info
-    15: "💡",  # hint
-    10: "🐛",  # debug
+    40: "✗",  # error
+    31: "→",  # important
+    30: "!",  # warning
+    25: "✓",  # success
+    21: "✓",  # save
+    20: "•",  # info
+    15: "•",  # hint
+    10: "•",  # debug
 }
+
+# Add color codes
+LEVEL_TO_COLORS = {
+    40: "\033[91m",  # Red for error
+    31: "\033[92m",  # Green for important
+    30: "\033[93m",  # Yellow for warning
+    25: "\033[92m",  # Green for success
+    21: "\033[92m",  # Green for save
+    20: "\033[94m",  # Blue for info
+    15: "\033[96m",  # Cyan for hint
+    10: "\033[90m",  # Grey for debug
+}
+
+RESET_COLOR = "\033[0m"
 
 
 class RootLogger(logging.RootLogger):
@@ -169,7 +183,9 @@ class _LogFormatter(logging.Formatter):
         #     return f"{record.levelname}:" + " {message}"
         # else:
         if LEVEL_TO_ICONS.get(record.levelno) is not None:
-            return f"{LEVEL_TO_ICONS[record.levelno]}" + " {message}"
+            color = LEVEL_TO_COLORS.get(record.levelno, "")
+            icon = LEVEL_TO_ICONS[record.levelno]
+            return f"{color}{icon}{RESET_COLOR}" + " {message}"
         else:
             return "{message}"
 
