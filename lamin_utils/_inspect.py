@@ -298,7 +298,7 @@ def inspect(
                     print_values += ", ..."
                 s = "" if len(synonyms_mapper) == 1 else "s"
                 labels = colors.yellow(
-                    f"{len(synonyms_mapper)} terms with {msg_casing}synonym{s}"
+                    f"{len(synonyms_mapper)} unique terms with {msg_casing}synonym{s}"
                 )
                 info_msg = f"detected {labels}: {colors.yellow(print_values)}"
                 result._synonyms_mapper = synonyms_mapper
