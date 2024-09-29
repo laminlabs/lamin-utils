@@ -32,6 +32,18 @@ CHARSET_DEFAULT = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxy
 CHARSET_INVERTED = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
+def increment_base62(s: str) -> str:
+    # we don't need to throw an error for zzzz because uids are enforced to be unique
+    # on the db level and have an enforced maximum length
+    value = sum(CHARSET_DEFAULT.index(c) * (62**i) for i, c in enumerate(reversed(s)))
+    value += 1
+    result = ""
+    while value:
+        value, remainder = divmod(value, 62)
+        result = CHARSET_DEFAULT[remainder] + result
+    return result.zfill(len(s))
+
+
 def encode(n, charset=CHARSET_DEFAULT):
     """Encodes a given integer ``n``."""
     chs = []

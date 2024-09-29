@@ -1,5 +1,6 @@
 import lamin_utils._base62 as base62
 import pytest
+from lamin_utils._base62 import increment_base62
 
 bytes_int_pairs = [
     (b"\x01", 1),
@@ -8,6 +9,17 @@ bytes_int_pairs = [
     (b"\x01\x01\x01", 0x010101),
     (b"\x01\x02\x03\x04\x05\x06\x07\x08", 0x0102030405060708),
 ]
+
+
+def test_increment_base62():
+    assert increment_base62("0000") == "0001"
+    assert increment_base62("0009") == "000A"
+    assert increment_base62("000Z") == "000a"
+    assert increment_base62("000z") == "0010"
+    assert increment_base62("0019") == "001A"
+    assert increment_base62("0zzz") == "1000"
+    # do not throw an error here, see comment in implementation
+    assert increment_base62("zzzz") == "10000"
 
 
 def test_const():
