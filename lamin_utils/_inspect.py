@@ -209,7 +209,7 @@ def _validate_logging(result: InspectResult, field: str | None = None) -> None:
     if result.frac_validated < 100:
         s = "" if len(result.non_validated) == 1 else "s"
         are = "is" if len(result.non_validated) == 1 else "are"
-        print_values = ", ".join(result.non_validated[:20])
+        print_values = ", ".join([str(i) for i in result.non_validated[:20]])
         if len(result.non_validated) > 20:
             print_values += ", ..."
         warn_msg = (

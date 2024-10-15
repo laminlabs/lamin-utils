@@ -129,7 +129,9 @@ def map_synonyms(
             return mapper
     else:
         # returns a list in the input order with synonyms replaced
-        mapped_list = mapped.fillna(mapped_df["orig_ids"]).tolist()
+        mapped_list = (
+            mapped.infer_objects(copy=False).fillna(mapped_df["orig_ids"]).tolist()
+        )
         if keep is False:
             if not mute_warning:
                 logger.warning("returning list might contain lists when 'keep=False'")
@@ -153,9 +155,9 @@ def to_str(
             values = categorical.add_categories("")
         else:
             values = identifiers
-        values = values.fillna("").astype(str)
+        values = values.infer_objects(copy=False).fillna("").astype(str)
     else:
-        values = identifiers.fillna("")
+        values = identifiers.infer_objects(copy=False).fillna("")
     if case_sensitive is False:
         values = values.str.lower()
     return values
@@ -168,7 +170,7 @@ def not_empty_none_na(values: Iterable) -> pd.Series:
     if not isinstance(values, (pd.Series, pd.Index)):
         values = pd.Series(values)
 
-    return values[pd.Series(values).fillna("").astype(bool)]
+    return values[pd.Series(values).infer_objects(copy=False).fillna("").astype(bool)]
 
 
 def explode_aggregated_column_to_map(
