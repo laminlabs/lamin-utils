@@ -154,7 +154,7 @@ def _unique_rm_empty(idx: pd.Index):
     return idx[(idx != "") & (~idx.isnull())]
 
 
-def _validate_stats(identifiers: Iterable, matches: np.ndarray) -> InspectResult:
+def _validate_stats(identifiers: Iterable, matches: np.ndarray):
     import pandas as pd
 
     df_val = pd.DataFrame(data={"__validated__": matches}, index=identifiers)
