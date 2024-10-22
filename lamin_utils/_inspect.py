@@ -154,7 +154,7 @@ def _unique_rm_empty(idx: pd.Index):
     return idx[(idx != "") & (~idx.isnull())]
 
 
-def _validate_stats(identifiers: Iterable, matches: np.ndarray):
+def _validate_stats(identifiers: Iterable, matches: np.ndarray) -> InspectResult:
     import pandas as pd
 
     df_val = pd.DataFrame(data={"__validated__": matches}, index=identifiers)
@@ -209,8 +209,8 @@ def _validate_logging(result: InspectResult, field: str | None = None) -> None:
     if result.frac_validated < 100:
         s = "" if len(result.non_validated) == 1 else "s"
         are = "is" if len(result.non_validated) == 1 else "are"
-        print_values = ", ".join([str(i) for i in result.non_validated[:20]])
-        if len(result.non_validated) > 20:
+        print_values = ", ".join([str(i) for i in result.non_validated[:10]])
+        if len(result.non_validated) > 10:
             print_values += ", ..."
         warn_msg = (
             f"{colors.yellow(f'{len(result.non_validated)} unique term{s}')} ({(100-result.frac_validated):.2f}%)"
@@ -243,7 +243,7 @@ def inspect(
         return_df: Whether to return a Pandas DataFrame.
 
     Returns:
-        InspectResult object
+        InspectResult object.
     """
     # backward compat
     if isinstance(kwargs.get("logging"), bool):
@@ -292,9 +292,9 @@ def inspect(
             )
             if len(synonyms_mapper) > 0:
                 print_values = ", ".join(
-                    list(synonyms_mapper.keys())[:20]  # type:ignore
+                    list(synonyms_mapper.keys())[:10]  # type:ignore
                 )
-                if len(synonyms_mapper) > 20:
+                if len(synonyms_mapper) > 10:
                     print_values += ", ..."
                 s = "" if len(synonyms_mapper) == 1 else "s"
                 labels = colors.yellow(
