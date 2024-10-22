@@ -3,6 +3,7 @@
 <!-- prettier-ignore -->
 Name | PR | Developer | Date | Version
 --- | --- | --- | --- | ---
+✨ Limit to only 10 print validated | [87](https://github.com/laminlabs/lamin-utils/pull/87) | [Zethson](https://github.com/Zethson) | 2024-10-22 |
 🔊 Fix logging integer values | [86](https://github.com/laminlabs/lamin-utils/pull/86) | [sunnyosun](https://github.com/sunnyosun) | 2024-10-15 |
 🚚 Move `increment_base62` from lamindb here | [85](https://github.com/laminlabs/lamin-utils/pull/85) | [falexwolf](https://github.com/falexwolf) | 2024-09-29 |
 🐛 Improve validate and standardize logging wording | [84](https://github.com/laminlabs/lamin-utils/pull/84) | [Zethson](https://github.com/Zethson) | 2024-09-02 |
