@@ -181,6 +181,13 @@ def test_inspect_casing(genes):
     assert result.non_validated == ["a1cf"]
 
 
+@pytest.mark.parametrize("numbers", [[0, 1, 2], [0.0, 0.1, 0.2]])
+def test_inspect_numbers(numbers):
+    df = pd.DataFrame(data={"number_col": [str(val) for val in numbers]})
+    with pytest.raises(ValueError, match="Numeric values found *"):
+        _ = inspect(df=df, identifiers={"numbers": numbers}, field="number_col")
+
+
 def test_validate(genes):
     df, _ = genes
     assert validate(

@@ -143,21 +143,58 @@ def map_synonyms(
 
 
 def to_str(
-    identifiers: pd.Series | pd.Index | pd.Categorical, case_sensitive: bool = False
+    series_values: pd.Series | pd.Index | pd.Categorical,
+    case_sensitive: bool = False,
+    *,
+    series_type: Literal["identifiers", "field values"] = None,
 ) -> pd.Series:
-    """Convert a pandas series values to strings with case sensitive option."""
-    if identifiers.dtype.name == "category":
+    """Convert Pandas Series values to strings with case sensitive option.
+
+    Args:
+        identifiers: Input data to cast to str if not numeric.
+        case_sensitive: Whether to preserve string case.
+
+    Returns:
+        pd.Series: Series with string values.
+
+    Raises:
+        ValueError: If input contains numeric data types.
+    """
+    import pandas as pd
+
+    series_type_msg = f" in {series_type}" if series_type else ""
+
+    if isinstance(series_values, pd.CategoricalDtype):
+        categories = series_values.cat.categories
+        if pd.api.types.is_numeric_dtype(categories.dtype):
+            raise ValueError(
+                f"Numeric values found in categorical data{series_type_msg}. Only string/object data types are supported."
+            )
+    else:
+        if pd.api.types.is_numeric_dtype(series_values):
+            raise ValueError(
+                f"Numeric data type ({series_values.dtype}) detected{series_type_msg}. Only string/object data types are supported."
+            )
+
+        if pd.api.types.is_object_dtype(series_values):
+            numeric_mask = pd.to_numeric(series_values, errors="coerce").notna()
+            if numeric_mask.any():
+                raise ValueError(
+                    f"Numeric values found in object/string data{series_type_msg}. Only string values are supported."
+                )
+
+    if series_values.dtype.name == "category":
         try:
-            categorical = identifiers.cat
+            categorical = series_values.cat
         except AttributeError:
-            categorical = identifiers
+            categorical = series_values
         if "" not in categorical.categories:
             values = categorical.add_categories("")
         else:
-            values = identifiers
+            values = series_values
         values = values.infer_objects(copy=False).fillna("").astype(str)
     else:
-        values = identifiers.infer_objects(copy=False).fillna("")
+        values = series_values.infer_objects(copy=False).fillna("")
     if case_sensitive is False:
         values = values.str.lower()
     return values
@@ -192,7 +229,7 @@ def explode_aggregated_column_to_map(
         sep: Splits all values of the agg_col by this separator.
 
     Returns:
-        a pandas.Series index by the split values from the aggregated column
+        A pandas.Series index by the split values from the aggregated column
     """
     df = df[[target_col, agg_col]].drop_duplicates().dropna(subset=[agg_col])
 

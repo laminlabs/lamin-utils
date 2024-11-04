@@ -133,9 +133,13 @@ def validate(
 
     identifiers = list(identifiers)
     identifiers_idx = pd.Index(identifiers)
-    identifiers_idx = to_str(identifiers_idx, case_sensitive=case_sensitive)
+    identifiers_idx = to_str(
+        identifiers_idx, case_sensitive=case_sensitive, series_type="identifiers"
+    )
 
-    field_values = to_str(field_values, case_sensitive=case_sensitive)
+    field_values = to_str(
+        field_values, case_sensitive=case_sensitive, series_type="field values"
+    )
 
     # annotated what complies with the default ID
     matches = identifiers_idx.isin(field_values)
@@ -236,6 +240,7 @@ def inspect(
     """Inspect if a list of identifiers are mappable to the entity reference.
 
     Args:
+        df: DataFrame containing the identifiers.
         identifiers: Identifiers that will be checked against the field.
         field: The BiontyField of the ontology to compare against.
                 Examples are 'ontology_id' to map against the source ID
