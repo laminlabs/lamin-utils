@@ -240,7 +240,7 @@ def inspect(
     """Inspect if a list of identifiers are mappable to the entity reference.
 
     Args:
-        df: DataFrame containing the identifiers.
+        df: DataFrame containing the field.
         identifiers: Identifiers that will be checked against the field.
         field: The BiontyField of the ontology to compare against.
                 Examples are 'ontology_id' to map against the source ID
