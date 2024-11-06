@@ -30,10 +30,9 @@ def map_synonyms(
         identifiers: Identifiers that will be mapped against a field.
         return_mapper: If True, returns {input synonyms : standardized field name}.
         case_sensitive: Whether the mapping is case sensitive.
-        keep : {'first', 'last', False}, default 'first'
+        keep: {'first', 'last', False}, default 'first'
             When a synonym maps to multiple standardized values, determines
             which duplicates to mark as `pandas.DataFrame.duplicated`.
-
             - "first": returns the first mapped standardized value
             - "last": returns the last mapped standardized value
             - False: returns all mapped standardized value
