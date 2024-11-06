@@ -32,7 +32,8 @@ def map_synonyms(
         case_sensitive: Whether the mapping is case sensitive.
         keep : {'first', 'last', False}, default 'first'
             When a synonym maps to multiple standardized values, determines
-            which duplicates to mark as `pandas.DataFrame.duplicated`
+            which duplicates to mark as `pandas.DataFrame.duplicated`.
+
             - "first": returns the first mapped standardized value
             - "last": returns the last mapped standardized value
             - False: returns all mapped standardized value
