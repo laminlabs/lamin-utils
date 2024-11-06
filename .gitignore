@@ -106,3 +106,5 @@ docs/lamin_logger.*
 lamin_sphinx
 docs/conf.py
 _docs_tmp*
+test.ipynb
+test-bug
