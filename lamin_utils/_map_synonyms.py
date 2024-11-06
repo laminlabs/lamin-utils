@@ -160,29 +160,6 @@ def to_str(
     Raises:
         ValueError: If input contains numeric data types.
     """
-    import pandas as pd
-
-    series_type_msg = f" in {series_type}" if series_type else ""
-
-    if isinstance(series_values, pd.CategoricalDtype):
-        categories = series_values.cat.categories
-        if pd.api.types.is_numeric_dtype(categories.dtype):
-            raise ValueError(
-                f"Numeric values found in categorical data{series_type_msg}. Only string/object data types are supported."
-            )
-    else:
-        if pd.api.types.is_numeric_dtype(series_values):
-            raise ValueError(
-                f"Numeric data type ({series_values.dtype}) detected{series_type_msg}. Only string/object data types are supported."
-            )
-
-        if pd.api.types.is_object_dtype(series_values):
-            numeric_mask = pd.to_numeric(series_values, errors="coerce").notna()
-            if numeric_mask.any():
-                raise ValueError(
-                    f"Numeric values found in object/string data{series_type_msg}. Only string values are supported."
-                )
-
     if series_values.dtype.name == "category":
         try:
             categorical = series_values.cat
