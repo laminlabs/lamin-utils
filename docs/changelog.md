@@ -3,6 +3,7 @@
 <!-- prettier-ignore -->
 Name | PR | Developer | Date | Version
 --- | --- | --- | --- | ---
+🐛 Raise TypeError for mismatching validation types & Python 3.12 support | [89](https://github.com/laminlabs/lamin-utils/pull/89) | [Zethson](https://github.com/Zethson) | 2024-11-08 |
 📝 Fix keep docstring | [91](https://github.com/laminlabs/lamin-utils/pull/91) | [Zethson](https://github.com/Zethson) | 2024-11-06 |
 🎨 Quote validate output | [88](https://github.com/laminlabs/lamin-utils/pull/88) | [Zethson](https://github.com/Zethson) | 2024-10-22 |
 ✨ Limit to only 10 print validated | [87](https://github.com/laminlabs/lamin-utils/pull/87) | [Zethson](https://github.com/Zethson) | 2024-10-22 |
