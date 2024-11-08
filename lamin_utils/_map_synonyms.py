@@ -143,21 +143,22 @@ def map_synonyms(
 
 
 def to_str(
-    identifiers: pd.Series | pd.Index | pd.Categorical, case_sensitive: bool = False
+    series_values: pd.Series | pd.Index | pd.Categorical,
+    case_sensitive: bool = False,
 ) -> pd.Series:
-    """Convert a pandas series values to strings with case sensitive option."""
-    if identifiers.dtype.name == "category":
+    """Convert Pandas Series values to strings with case sensitive option."""
+    if series_values.dtype.name == "category":
         try:
-            categorical = identifiers.cat
+            categorical = series_values.cat
         except AttributeError:
-            categorical = identifiers
+            categorical = series_values
         if "" not in categorical.categories:
             values = categorical.add_categories("")
         else:
-            values = identifiers
+            values = series_values
         values = values.infer_objects(copy=False).fillna("").astype(str)
     else:
-        values = identifiers.infer_objects(copy=False).fillna("")
+        values = series_values.infer_objects(copy=False).fillna("")
     if case_sensitive is False:
         values = values.str.lower()
     return values
@@ -192,7 +193,7 @@ def explode_aggregated_column_to_map(
         sep: Splits all values of the agg_col by this separator.
 
     Returns:
-        a pandas.Series index by the split values from the aggregated column
+        A pandas.Series index by the split values from the aggregated column
     """
     df = df[[target_col, agg_col]].drop_duplicates().dropna(subset=[agg_col])
 

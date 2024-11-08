@@ -131,6 +131,8 @@ def validate(
         mute = not kwargs.get("logging")
     import pandas as pd
 
+    _check_type_compatibility(identifiers, field_values)
+
     identifiers = list(identifiers)
     identifiers_idx = pd.Index(identifiers)
     identifiers_idx = to_str(identifiers_idx, case_sensitive=case_sensitive)
@@ -147,6 +149,38 @@ def validate(
                 _validate_stats(identifiers=identifiers, matches=matches), field=field
             )
     return matches
+
+
+def _check_type_compatibility(identifiers: Iterable, field_values: Iterable) -> None:
+    """Checks whether the identifiers and field_values have the same high level (numeric vs str/categorical) data type.
+
+    Raises:
+        TypeError: If the high level data types do not match.
+    """
+    import numpy as np
+    import pandas as pd
+
+    id_sample, value_sample = (
+        next(iter(identifiers), None),
+        next(iter(field_values), None),
+    )
+
+    def _get_type_category(value):
+        if isinstance(value, (int, float, complex, np.number)):
+            return "numeric"
+        elif isinstance(value, (str, np.str_, pd.Categorical)):
+            return "str/categorical"
+        return "unknown"
+
+    id_type, value_type = (
+        _get_type_category(id_sample),
+        _get_type_category(value_sample),
+    )
+
+    if id_type != value_type:
+        raise TypeError(
+            f"Type mismatch: identifiers are '{id_type}' but field_values are '{value_type}'."
+        )
 
 
 def _unique_rm_empty(idx: pd.Index):
@@ -236,6 +270,7 @@ def inspect(
     """Inspect if a list of identifiers are mappable to the entity reference.
 
     Args:
+        df: DataFrame containing the field.
         identifiers: Identifiers that will be checked against the field.
         field: The BiontyField of the ontology to compare against.
                 Examples are 'ontology_id' to map against the source ID
