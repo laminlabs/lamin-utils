@@ -146,18 +146,7 @@ def to_str(
     series_values: pd.Series | pd.Index | pd.Categorical,
     case_sensitive: bool = False,
 ) -> pd.Series:
-    """Convert Pandas Series values to strings with case sensitive option.
-
-    Args:
-        identifiers: Input data to cast to str if not numeric.
-        case_sensitive: Whether to preserve string case.
-
-    Returns:
-        pd.Series: Series with string values.
-
-    Raises:
-        ValueError: If input contains numeric data types.
-    """
+    """Convert Pandas Series values to strings with case sensitive option."""
     if series_values.dtype.name == "category":
         try:
             categorical = series_values.cat
