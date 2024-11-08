@@ -3,6 +3,7 @@
 <!-- prettier-ignore -->
 Name | PR | Developer | Date | Version
 --- | --- | --- | --- | ---
+📝 Fix keep docstring | [91](https://github.com/laminlabs/lamin-utils/pull/91) | [Zethson](https://github.com/Zethson) | 2024-11-06 |
 🎨 Quote validate output | [88](https://github.com/laminlabs/lamin-utils/pull/88) | [Zethson](https://github.com/Zethson) | 2024-10-22 |
 ✨ Limit to only 10 print validated | [87](https://github.com/laminlabs/lamin-utils/pull/87) | [Zethson](https://github.com/Zethson) | 2024-10-22 |
 🔊 Fix logging integer values | [86](https://github.com/laminlabs/lamin-utils/pull/86) | [sunnyosun](https://github.com/sunnyosun) | 2024-10-15 |
