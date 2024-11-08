@@ -181,11 +181,17 @@ def test_inspect_casing(genes):
     assert result.non_validated == ["a1cf"]
 
 
-@pytest.mark.parametrize("numbers", [[0, 1, 2], [0.0, 0.1, 0.2]])
-def test_inspect_numbers(numbers):
-    df = pd.DataFrame(data={"number_col": [str(val) for val in numbers]})
-    with pytest.raises(ValueError, match="Numeric values found *"):
-        _ = inspect(df=df, identifiers={"numbers": numbers}, field="number_col")
+@pytest.mark.parametrize(
+    "identifiers, field_values",
+    [
+        ([0, 1, 2], ["a", "b", "c"]),
+        ([0.0, 0.1, 0.2], [str(val) for val in [0.0, 0.1, 0.2]]),
+    ],
+)
+def test_type_compatibility_raises_with_df(identifiers, field_values):
+    df = pd.DataFrame({"field_col": field_values})
+    with pytest.raises(TypeError, match="Type mismatch"):
+        _ = inspect(df=df, identifiers=pd.Series(identifiers), field="field_col")
 
 
 def test_validate(genes):

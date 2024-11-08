@@ -145,8 +145,6 @@ def map_synonyms(
 def to_str(
     series_values: pd.Series | pd.Index | pd.Categorical,
     case_sensitive: bool = False,
-    *,
-    series_type: Literal["identifiers", "field values"] = None,
 ) -> pd.Series:
     """Convert Pandas Series values to strings with case sensitive option.
 
