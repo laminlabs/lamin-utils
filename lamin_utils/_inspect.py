@@ -165,22 +165,24 @@ def _check_type_compatibility(identifiers: Iterable, field_values: Iterable) -> 
         next(iter(field_values), None),
     )
 
-    def _get_type_category(value):
-        if isinstance(value, (int, float, complex, np.number)):
-            return "numeric"
-        elif isinstance(value, (str, np.str_, pd.Categorical)):
-            return "str/categorical"
-        return "unknown"
+    if id_sample is not None:
 
-    id_type, value_type = (
-        _get_type_category(id_sample),
-        _get_type_category(value_sample),
-    )
+        def _get_type_category(value):
+            if isinstance(value, (int, float, complex, np.number)):
+                return "numeric"
+            elif isinstance(value, (str, np.str_, pd.Categorical)):
+                return "str/categorical"
+            return "unknown"
 
-    if id_type != value_type:
-        raise TypeError(
-            f"Type mismatch: identifiers are '{id_type}' but field_values are '{value_type}'."
+        id_type, value_type = (
+            _get_type_category(id_sample),
+            _get_type_category(value_sample),
         )
+
+        if id_type != value_type:
+            raise TypeError(
+                f"Type mismatch: identifiers are '{id_type}' but field_values are '{value_type}'."
+            )
 
 
 def _unique_rm_empty(idx: pd.Index):
