@@ -157,23 +157,36 @@ def _check_type_compatibility(identifiers: Iterable, field_values: Iterable) -> 
     Raises:
         TypeError: If the high level data types do not match.
     """
+    import math
+
     import numpy as np
     import pandas as pd
 
+    # Only look at the first element because we assume that the dtype is consistent for efficiency
     id_sample, value_sample = (
         next(iter(identifiers), None),
         next(iter(field_values), None),
     )
 
-    if id_sample is not None:
+    def _is_nan(value) -> bool:
+        if isinstance(value, (float, np.floating)):
+            return math.isnan(value) or np.isnan(value)
+        return False
 
-        def _get_type_category(value):
-            if isinstance(value, (int, float, complex, np.number)):
-                return "numeric"
-            elif isinstance(value, (str, np.str_, pd.Categorical)):
-                return "str/categorical"
-            return "unknown"
+    def _get_type_category(value):
+        if isinstance(value, (int, float, complex, np.number)):
+            return "numeric"
+        elif isinstance(value, (str, np.str_, pd.Categorical)):
+            return "str/categorical"
+        return "unknown"
 
+    # Real world data may have Nones and nan values. We can pass over them.
+    if (
+        id_sample is not None
+        and value_sample is not None
+        and not _is_nan(id_sample)
+        and not _is_nan(value_sample)
+    ):
         id_type, value_type = (
             _get_type_category(id_sample),
             _get_type_category(value_sample),

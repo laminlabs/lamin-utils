@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 from lamin_utils._inspect import inspect, validate
@@ -115,8 +116,6 @@ def test_inspect_return_df(genes):
 
 
 def test_inspect_empty_dup_input(genes):
-    import numpy as np
-
     df, _ = genes
 
     result = inspect(
@@ -139,7 +138,6 @@ def test_inspect_zero_identifiers():
 
 
 def test_inspect_empty_df():
-    import numpy as np
     import pandas as pd
 
     result = inspect(
