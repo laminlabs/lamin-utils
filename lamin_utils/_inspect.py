@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class InspectResult:
     """Result of inspect.
 
-    An InspectResult object of calls such as :meth:`~lamindb.core.CanValidate.inspect`.
+    An InspectResult object of calls such as :meth:`~lamindb.core.CanCurate.inspect`.
     """
 
     def __init__(
@@ -41,12 +41,12 @@ class InspectResult:
 
     @property
     def validated(self) -> list[str]:
-        """List of successfully :meth:`~lamindb.core.CanValidate.validate` validated items."""
+        """List of successfully :meth:`~lamindb.core.CanCurate.validate` validated items."""
         return self._validated
 
     @property
     def non_validated(self) -> list[str]:
-        """List of unsuccessfully :meth:`~lamindb.core.CanValidate.validate` items.
+        """List of unsuccessfully :meth:`~lamindb.core.CanCurate.validate` items.
 
         This list can be used to remove any non-validated values such as
         genes that do not map against the specified source.
