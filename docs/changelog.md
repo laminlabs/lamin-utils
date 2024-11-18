@@ -3,6 +3,7 @@
 <!-- prettier-ignore -->
 Name | PR | Developer | Date | Version
 --- | --- | --- | --- | ---
+📝 Use CanCurate instead of CanValidate in docs | [93](https://github.com/laminlabs/lamin-utils/pull/93) | [Koncopd](https://github.com/Koncopd) | 2024-11-18 |
 🐛 Raise TypeError for mismatching validation types & Python 3.12 support | [89](https://github.com/laminlabs/lamin-utils/pull/89) | [Zethson](https://github.com/Zethson) | 2024-11-08 |
 📝 Fix keep docstring | [91](https://github.com/laminlabs/lamin-utils/pull/91) | [Zethson](https://github.com/Zethson) | 2024-11-06 |
 🎨 Quote validate output | [88](https://github.com/laminlabs/lamin-utils/pull/88) | [Zethson](https://github.com/Zethson) | 2024-10-22 |
