@@ -80,13 +80,13 @@ def map_synonyms(
 
     # __agg__ is a column of identifiers based on case_sensitive
     df["__agg__"] = to_str(df[field], case_sensitive=case_sensitive)
-    # field_map is {"__agg__": field_value} for mappable values
+
+    # Get both exact matches and synonyms
     field_map = pd.merge(mapped_df, df, on="__agg__").set_index("__agg__")[field]
 
-    # only runs if synonyms mapping is needed
-    # unique of field_map is needed here due to possible multiple matches of identifier
-    if len(field_map.unique()) < mapped_df.shape[0]:
-        # {synonym: name}
+    # Always check synonyms for unmatched terms
+    unmapped_terms = set(mapped_df["__agg__"]) - set(field_map.index)
+    if unmapped_terms:
         syn_map = explode_aggregated_column_to_map(
             df=df,
             agg_col=synonyms_field,
@@ -96,14 +96,11 @@ def map_synonyms(
         )
 
         if not case_sensitive:
-            # convert the synonyms to the same case_sensitive
             syn_map.index = syn_map.index.str.lower()
-            # TODO: allow returning duplicated entries
             syn_map = syn_map[syn_map.index.drop_duplicates()]
-        # if values are already in field_map, do not apply synonyms mapping
-        syn_map = {
-            k: v for k, v in syn_map.to_dict().items() if k not in field_map.index
-        }
+
+        # Only keep synonym mappings for terms not found in field_map
+        syn_map = {k: v for k, v in syn_map.to_dict().items() if k in unmapped_terms}
     else:
         syn_map = {}
 
@@ -116,7 +113,6 @@ def map_synonyms(
         logger.info(f"standardized {n_mapped}/{n_input} terms")
 
     if return_mapper:
-        # only returns mapped synonyms
         mapper = mapped[~mapped.isna()].to_dict()
         mapper = {k: v for k, v in mapper.items() if k != v}
         if keep is False:
@@ -128,7 +124,6 @@ def map_synonyms(
         else:
             return mapper
     else:
-        # returns a list in the input order with synonyms replaced
         mapped_list = (
             mapped.infer_objects(copy=False).fillna(mapped_df["orig_ids"]).tolist()
         )
