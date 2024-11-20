@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 from lamin_utils._map_synonyms import (
@@ -165,6 +166,32 @@ def test_map_synonyms_unsupported_field(genes):
         )
 
 
+def test_early_mismatch():
+    cell_types = {
+        "name": [
+            "Plasmablast",
+            "conventional dendritic cell",
+            "plasmablast",
+        ],
+        "synonyms": [
+            "",
+            "cDC|dendritic reticular cell|DC1|type 1 DC",
+            "CD27-positive|CD38-positive|CD20-negative B cell",
+        ],
+    }
+    df = pd.DataFrame(cell_types)
+
+    result = standardize(
+        df=df,
+        identifiers=["Plasmablast", "cDC"],
+        field="name",
+        return_field="name",
+        case_sensitive=False,
+        synonyms_field="synonyms",
+    )
+    assert result == ["plasmablast", "conventional dendritic cell"]
+
+
 def test_map_synonyms_empty_df():
     assert (
         map_synonyms(
@@ -176,8 +203,6 @@ def test_map_synonyms_empty_df():
 
 
 def test_to_str():
-    import numpy as np
-
     assert to_str(pd.Index(["A", "a", None, np.nan])).tolist() == ["a", "a", "", ""]
     assert to_str(pd.Series(["A", "a", None, np.nan])).tolist() == ["a", "a", "", ""]
     assert to_str(
@@ -186,8 +211,6 @@ def test_to_str():
 
 
 def test_not_empty_none_na():
-    import numpy as np
-
     assert not_empty_none_na(["a", None, "", np.nan]).loc[0] == "a"
     assert not_empty_none_na(pd.Index(["a", None, "", np.nan])).tolist() == ["a"]
     assert not_empty_none_na(
@@ -233,8 +256,6 @@ def test_explode_aggregated_column_to_map(genes):
 
 
 def test_to_str_categorical_series():
-    import numpy as np
-
     df = pd.DataFrame([np.nan, None, "a"])
     df[0] = df[0].astype("category")
 
