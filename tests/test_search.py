@@ -36,11 +36,11 @@ def df():
 
 def test_search_synonyms(df):
     res = search(df=df, string="P cell")
-    assert res.iloc[0].name == "nodal myocyte"
+    assert res.iloc[0]["name"] == "nodal myocyte"
 
     # search in name, without synonyms search
     res = search(df=df, string="P cell", field="name")
-    assert res.iloc[0].name == "PP cell"
+    assert res.iloc[0]["name"] == "PP cell"
 
 
 def test_search_limit(df):
@@ -51,12 +51,12 @@ def test_search_limit(df):
 def test_search_return_df(df):
     res = search(df=df, string="P cell")
     assert res.shape == (2, 4)
-    assert res.iloc[0].name == "nodal myocyte"
+    assert res.iloc[0]["name"] == "nodal myocyte"
 
 
 def test_search_pass_fields(df):
     res = search(df=df, string="type F enteroendocrine", field=["synonyms", "children"])
-    assert res.iloc[0].synonyms == "type F enteroendocrine cell"
+    assert res.iloc[0]["synonyms"] == "type F enteroendocrine cell"
 
 
 def test_search_case_sensitive(df):

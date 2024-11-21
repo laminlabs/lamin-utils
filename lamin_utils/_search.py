@@ -74,6 +74,9 @@ def search(
     import pandas as pd
     from pandas.api.types import is_object_dtype, is_string_dtype
 
+    if len(df) == 0:
+        return df
+
     fields_convert = {}
     if field is None:
         fields = df.columns.to_list()
