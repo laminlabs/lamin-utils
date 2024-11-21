@@ -30,7 +30,7 @@ def _ranks(col: Series, string: str, case_sensitive: bool, fields_convert: dict)
         * 10
     )
     startswith_rank = (
-        col.str.match(rf"(?:^|\|){string}[^ ]*(\||$)", case=case_sensitive) * 8
+        col.str.match(rf"(?:^|.*\|){string}[^ ]*(\||$)", case=case_sensitive) * 8
     )
     right_rank = col.str.match(rf"(?:^|.*[ \|]){string}.*", case=case_sensitive) * 2
     left_rank = col.str.match(rf".*{string}(?:$|[ \|\.,;:].*)", case=case_sensitive) * 2
@@ -53,6 +53,7 @@ def search(
     field: str | list[str] | None = None,
     limit: int | None = 20,
     case_sensitive: bool = False,
+    _show_rank: bool = False,
 ) -> DataFrame:
     """Search a given string against a field.
 
@@ -98,6 +99,10 @@ def search(
 
     ranks = lambda col: _ranks(col, string, case_sensitive, fields_convert)
     rank = df_contains.apply(ranks).sum(axis=1)
+
+    if _show_rank:
+        df_contains = df_contains.copy()
+        df_contains.loc[:, "rank"] = rank
 
     df_result = df_contains.loc[rank.sort_values(ascending=False).index]
     return df_result if limit is None else df_result.head(limit)

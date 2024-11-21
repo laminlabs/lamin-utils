@@ -34,13 +34,17 @@ def df():
     return pd.DataFrame.from_records(records)
 
 
-def test_search_synonyms(df):
-    res = search(df=df, string="P cell")
+def test_search_general(df):
+    res = search(df=df, string="P cell", _show_rank=True)
     assert res.iloc[0]["name"] == "nodal myocyte"
+    assert res.iloc[0]["rank"] == 223
+    assert len(res) == 2
+    assert res.iloc[1]["rank"] == 3
 
     # search in name, without synonyms search
-    res = search(df=df, string="P cell", field="name")
+    res = search(df=df, string="P cell", field="name", _show_rank=True)
     assert res.iloc[0]["name"] == "PP cell"
+    assert res.iloc[0]["rank"] == 3
 
 
 def test_search_limit(df):
@@ -55,15 +59,22 @@ def test_search_return_df(df):
 
 
 def test_search_pass_fields(df):
-    res = search(df=df, string="type F enteroendocrine", field=["synonyms", "children"])
+    res = search(
+        df=df,
+        string="type F enteroendocrine",
+        field=["synonyms", "children"],
+        _show_rank=True,
+    )
     assert res.iloc[0]["synonyms"] == "type F enteroendocrine cell"
+    assert res.iloc[0]["rank"] == 15
 
 
 def test_search_case_sensitive(df):
     res = search(df=df, string="b cell", case_sensitive=True)
     assert len(res) == 0
-    res = search(df=df, string="b cell", case_sensitive=False)
+    res = search(df=df, string="b cell", case_sensitive=False, _show_rank=True)
     assert res.iloc[0]["name"] == "B cell"
+    assert res.iloc[0]["rank"] == 438
 
 
 def test_search_empty_df():
