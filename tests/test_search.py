@@ -35,48 +35,35 @@ def df():
 
 
 def test_search_synonyms(df):
-    res = search(df=df, string="P cells")
-    assert res.index[0] == "nodal myocyte"
+    res = search(df=df, string="P cell")
+    assert res.iloc[0].name == "nodal myocyte"
 
-    # without synonyms search
-    res = search(df=df, synonyms_field=None, string="P cells")
-    assert res.index[0] == "PP cell"
+    # search in name, without synonyms search
+    res = search(df=df, string="P cell", field="name")
+    assert res.iloc[0].name == "PP cell"
 
 
 def test_search_limit(df):
-    res = search(df=df, string="P cells", limit=1)
+    res = search(df=df, string="P cell", limit=1)
     assert res.shape[0] == 1
 
 
-def test_search_keep(df):
-    # TODO: better test here
-    res = search(df=df, string="enteroendocrine", keep=False)
-    assert res.index[0] == "PP cell"
-
-
 def test_search_return_df(df):
-    res = search(df=df, string="P cells")
-    assert res.shape == (4, 4)
+    res = search(df=df, string="P cell")
+    assert res.shape == (2, 4)
     assert res.iloc[0].name == "nodal myocyte"
 
 
-def test_search_return_tie_results(df):
-    res = search(df=df, string="A cell", synonyms_field=None)
-    assert res.iloc[0].__ratio__ == res.iloc[1].__ratio__
-
-
-def test_search_non_default_field(df):
-    res = search(df=df, string="type F enteroendocrine", field="synonyms")
-    assert res.index[0] == "type F enteroendocrine cell"
+def test_search_pass_fields(df):
+    res = search(df=df, string="type F enteroendocrine", field=["synonyms", "children"])
+    assert res.iloc[0].synonyms == "type F enteroendocrine cell"
 
 
 def test_search_case_sensitive(df):
     res = search(df=df, string="b cell", case_sensitive=True)
-    assert res.iloc[0].__ratio__ < 100
-
+    assert len(res) == 0
     res = search(df=df, string="b cell", case_sensitive=False)
-    assert res.index[0] == "B cell"
-    assert res.iloc[0].__ratio__ == 100
+    assert res.iloc[0].name == "B cell"
 
 
 def test_search_empty_df():
