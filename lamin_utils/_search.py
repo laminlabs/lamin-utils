@@ -30,7 +30,7 @@ def _ranks(col: Series, string: str, case_sensitive: bool, fields_convert: dict)
         * 10
     )
     startswith_rank = (
-        col.str.match(rf"(?:^|.*\|){string}[^ ]*(\|.*|$)", case=case_sensitive) * 8
+        col.str.match(rf"(?:^|.*\|){string}[^ ]*(?:\|.*|$)", case=case_sensitive) * 8
     )
     right_rank = col.str.match(rf"(?:^|.*[ \|]){string}.*", case=case_sensitive) * 2
     left_rank = col.str.match(rf".*{string}(?:$|[ \|\.,;:].*)", case=case_sensitive) * 2
