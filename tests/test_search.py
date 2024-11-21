@@ -10,24 +10,28 @@ def df():
             "ontology_id": "CL:0000084",
             "name": "T cell",
             "synonyms": "T-cell|T lymphocyte|T-lymphocyte",
+            "description": "A Type Of Lymphocyte Whose Defining Characteristic Is The Expression Of A T Cell Receptor Complex.",
             "children": ["CL:0000798", "CL:0002420", "CL:0002419", "CL:0000789"],
         },
         {
             "ontology_id": "CL:0000236",
             "name": "B cell",
             "synonyms": "B lymphocyte|B-lymphocyte|B-cell",
+            "description": "A Lymphocyte Of B Lineage That Is Capable Of B Cell Mediated Immunity.",
             "children": ["CL:0009114", "CL:0001201"],
         },
         {
             "ontology_id": "CL:0000696",
             "name": "PP cell",
             "synonyms": "type F enteroendocrine cell",
+            "description": "A Cell That Stores And Secretes Pancreatic Polypeptide Hormone.",
             "children": ["CL:0002680"],
         },
         {
             "ontology_id": "CL:0002072",
             "name": "nodal myocyte",
             "synonyms": "cardiac pacemaker cell|myocytus nodalis|P cell",
+            "description": "A Specialized Cardiac Myocyte In The Sinoatrial And Atrioventricular Nodes. The Cell Is Slender And Fusiform Confined To The Nodal Center, Circumferentially Arranged Around The Nodal Artery.",
             "children": ["CL:1000409", "CL:1000410"],
         },
     ]
