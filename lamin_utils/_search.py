@@ -91,6 +91,6 @@ def search(
         )
 
     rank = df_contains.apply(ranks).sum(axis=1)
-    df_contains["rank"] = rank
     df_result = df_contains.loc[rank.sort_values(ascending=False).index]
+
     return df_result if limit is None else df_result.head(limit)
