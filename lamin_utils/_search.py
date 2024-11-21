@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 def _contains(col: Series, string: str, case_sensitive: bool, fields_convert: dict):
     if col.name not in fields_convert:
-        return False
+        return [False] * len(col)
     if fields_convert[col.name]:
         col = col.astype(str)
     return col.str.contains(string, case=case_sensitive)
@@ -16,7 +16,7 @@ def _contains(col: Series, string: str, case_sensitive: bool, fields_convert: di
 
 def _ranks(col: Series, string: str, case_sensitive: bool, fields_convert: dict):
     if col.name not in fields_convert:
-        return 0
+        return [0] * len(col)
     if fields_convert[col.name]:
         col = col.astype(str)
     exact_rank = col.str.fullmatch(string, case=case_sensitive) * 200
@@ -90,6 +90,8 @@ def search(
 
     contains = lambda col: _contains(col, string, case_sensitive, fields_convert)
     df_contains = df.loc[df.apply(contains).any(axis=1)]
+    if len(df_contains) == 0:
+        return df_contains
 
     ranks = lambda col: _ranks(col, string, case_sensitive, fields_convert)
     rank = df_contains.apply(ranks).sum(axis=1)
