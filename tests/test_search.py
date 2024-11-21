@@ -38,6 +38,23 @@ def df():
     return pd.DataFrame.from_records(records)
 
 
+# these tests also check ranks of the searches values (res["rank"] below)
+# this is needed to perform cross-check with lamindb search
+# to recompute the ranks via lamindb
+# change .alias to .annotate in lamindb/_record.py def _search(...)
+# then run the code below in an empty instance with bionty schema
+# import lamindb as ln
+# import bionty as bt
+# cts = ["CL:0000084", "CL:0000236", "CL:0000696", "CL:0002072"]
+# ln.save([bt.CellType.from_source(ontology_id=oid) for oid in cts])
+# results = bt.CellType.search("P cell")
+# print([(result.name, result.rank) for result in results.list()])
+# results = bt.CellType.search("b cell")
+# print([(result.name, result.rank) for result in results.list()])
+# results = bt.CellType.search("type F enteroendocrine", field="synonyms")
+# print([(result.name, result.rank) for result in results.list()])
+
+
 def test_search_general(df):
     res = search(df=df, string="P cell", _show_rank=True)
     assert res.iloc[0]["name"] == "nodal myocyte"
@@ -58,7 +75,7 @@ def test_search_limit(df):
 
 def test_search_return_df(df):
     res = search(df=df, string="P cell")
-    assert res.shape == (2, 4)
+    assert res.shape == (2, 5)
     assert res.iloc[0]["name"] == "nodal myocyte"
 
 
