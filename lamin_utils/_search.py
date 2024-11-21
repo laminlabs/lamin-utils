@@ -3,7 +3,47 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from pandas import DataFrame
+    from pandas import DataFrame, Series
+
+
+def _contains(col: Series, string: str, case_sensitive: bool, fields_convert: dict):
+    if col.name not in fields_convert:
+        return False
+    if fields_convert[col.name]:
+        col = col.astype(str)
+    return col.str.contains(string, case=case_sensitive)
+
+
+def _ranks(col: Series, string: str, case_sensitive: bool, fields_convert: dict):
+    if col.name not in fields_convert:
+        return 0
+    if fields_convert[col.name]:
+        col = col.astype(str)
+    exact_rank = col.str.fullmatch(string, case=case_sensitive) * 200
+    synonym_rank = (
+        col.str.match(rf"(?:^|.*\|){string}(?:\|.*|$)", case=case_sensitive) * 200
+    )
+    sub_rank = (
+        col.str.match(
+            rf"(?:^|.*[ \|\.,;:]){string}(?:[ \|\.,;:].*|$)", case=case_sensitive
+        )
+        * 10
+    )
+    startswith_rank = (
+        col.str.match(rf"(?:^|\|){string}[^ ]*(\||$)", case=case_sensitive) * 8
+    )
+    right_rank = col.str.match(rf"(?:^|.*[ \|]){string}.*", case=case_sensitive) * 2
+    left_rank = col.str.match(rf".*{string}(?:$|[ \|\.,;:].*)", case=case_sensitive) * 2
+    contains_rank = col.str.contains(string, case=case_sensitive).astype("int32")
+    return (
+        exact_rank
+        + synonym_rank
+        + sub_rank
+        + startswith_rank
+        + right_rank
+        + left_rank
+        + contains_rank
+    )
 
 
 def search(
@@ -44,53 +84,15 @@ def search(
             elif is_string_dtype(df_f):
                 fields_convert[f] = False
     else:
-        field = [field] if isinstance(field, str) else field
-        for f in field:
+        fields = [field] if isinstance(field, str) else field
+        for f in fields:
             fields_convert[f] = not is_string_dtype(df[f])
 
-    def contains(col):
-        if col.name not in fields_convert:
-            return False
-        if fields_convert[col.name]:
-            col = col.astype(str)
-        return col.str.contains(string, case=case_sensitive)
-
+    contains = lambda col: _contains(col, string, case_sensitive, fields_convert)
     df_contains = df.loc[df.apply(contains).any(axis=1)]
 
-    def ranks(col):
-        if col.name not in fields_convert:
-            return 0
-        if fields_convert[col.name]:
-            col = col.astype(str)
-        exact_rank = col.str.fullmatch(string, case=case_sensitive) * 200
-        synonym_rank = (
-            col.str.match(rf"(?:^|.*\|){string}(?:\|.*|$)", case=case_sensitive) * 200
-        )
-        sub_rank = (
-            col.str.match(
-                rf"(?:^|.*[ \|\.,;:]){string}(?:[ \|\.,;:].*|$)", case=case_sensitive
-            )
-            * 10
-        )
-        startswith_rank = (
-            col.str.match(rf"(?:^|\|){string}[^ ]*(\||$)", case=case_sensitive) * 8
-        )
-        right_rank = col.str.match(rf"(?:^|.*[ \|]){string}.*", case=case_sensitive) * 2
-        left_rank = (
-            col.str.match(rf".*{string}(?:$|[ \|\.,;:].*)", case=case_sensitive) * 2
-        )
-        contains_rank = col.str.contains(string, case=case_sensitive).astype("int32")
-        return (
-            exact_rank
-            + synonym_rank
-            + sub_rank
-            + startswith_rank
-            + right_rank
-            + left_rank
-            + contains_rank
-        )
-
+    ranks = lambda col: _ranks(col, string, case_sensitive, fields_convert)
     rank = df_contains.apply(ranks).sum(axis=1)
-    df_result = df_contains.loc[rank.sort_values(ascending=False).index]
 
+    df_result = df_contains.loc[rank.sort_values(ascending=False).index]
     return df_result if limit is None else df_result.head(limit)
