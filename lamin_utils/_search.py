@@ -1,129 +1,96 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
-
-from lamin_utils import logger
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import pandas as pd
+    from pandas import DataFrame
 
 
 def search(
-    df: pd.DataFrame,
+    df: DataFrame,
     string: str,
-    field: str = "name",
+    *,
+    field: str | list[str] | None = None,
     limit: int | None = 20,
-    synonyms_field: str | None = "synonyms",
     case_sensitive: bool = False,
-    synonyms_sep: str = "|",
-    keep: Literal["first", "last", False] = "first",
-) -> pd.DataFrame:
+) -> DataFrame:
     """Search a given string against a field.
 
     Args:
         df: The DataFrame to search in.
         string: The input string to match against the field values.
-        field: The name of the field to search against.
-        limit: The maximum number of top results to return. If None, returns all results.
-        synonyms_field: The name of the field containing synonyms.
-            If None, no synonym matching is performed.
-        case_sensitive: Whether the match should be case sensitive. Defaults to False.
-        synonyms_sep: The separator used in the synonyms field.
-        keep: Determines which duplicates to keep when grouping results.
-            Options are "first", "last", or False (keep all).
+        field: The field or fields to search. Search all fields containing strings by default.
+        limit: Maximum amount of top results to return.
+        case_sensitive: Whether the match is case sensitive.
 
     Returns:
         A DataFrame of ranked search results.
         This DataFrame contains the matched rows from the input DataFrame,
-        sorted by the match ratio in descending order.
-        It includes all columns from the input DataFrame plus an additional '__ratio__' column indicating the match score.
+        sorted by the match rank in descending order.
 
     Raises:
-        KeyError: If the specified field or synonyms_field is not found in the DataFrame.
-        ValueError: If an invalid value is provided for the 'keep' parameter.
+        KeyError: If the specified field is not found in the DataFrame.
     """
     import pandas as pd
+    from pandas.api.types import is_object_dtype, is_string_dtype
 
-    from ._map_synonyms import explode_aggregated_column_to_map
-
-    def _fuzz(
-        string: str,
-        iterable: pd.Series,
-        case_sensitive: bool = True,
-        limit: int | None = None,
-    ):
-        from rapidfuzz import fuzz, process, utils
-
-        # use WRatio to account for typos
-        if " " in string:
-            scorer = fuzz.QRatio
-        else:
-            scorer = fuzz.WRatio
-
-        processor = None if case_sensitive else utils.default_process
-        results = process.extract(
-            string,
-            iterable,
-            scorer=scorer,
-            limit=limit,
-            processor=processor,
-        )
-        try:
-            return pd.DataFrame(results).set_index(2)[1]
-        except KeyError:
-            # no search results
-            return None
-
-    # empty DataFrame
-    if df.shape[0] == 0:
-        return df
-
-    # search against each of the synonyms
-    if (synonyms_field in df.columns) and (synonyms_field != field):
-        # creates field_value:synonym
-        mapper = explode_aggregated_column_to_map(
-            df,
-            agg_col=synonyms_field,  # type:ignore
-            target_col=field,
-            keep=keep,
-            sep=synonyms_sep,
-        )
-        if keep is False:
-            mapper = mapper.explode()
-        # adds field_value:field_value to field_value:synonym
-        df_field = pd.Series(df[field].values, index=df[field], name=field)
-        df_field.index.name = synonyms_field
-        df_field = df_field[df_field.index.difference(mapper.index)]
-        mapper = pd.concat([mapper, df_field])
-        df_exp = mapper.reset_index()
-        target_column = synonyms_field
+    fields_convert = {}
+    if field is None:
+        fields = df.columns.to_list()
+        for f in fields:
+            df_f = df[f]
+            if is_object_dtype(df_f):
+                fields_convert[f] = True
+            elif is_string_dtype(df_f):
+                fields_convert[f] = False
     else:
-        if synonyms_field == field:
-            logger.warning(
-                "Input field is the same as synonyms field, skipping synonyms matching"
+        field = [field] if isinstance(field, str) else field
+        for f in field:
+            fields_convert[f] = not is_string_dtype(df[f])
+
+    def contains(col):
+        if col.name not in fields_convert:
+            return False
+        if fields_convert[col.name]:
+            col = col.astype(str)
+        return col.str.contains(string, case=case_sensitive)
+
+    df_contains = df.loc[df.apply(contains).any(axis=1)]
+
+    def ranks(col):
+        if col.name not in fields_convert:
+            return 0
+        if fields_convert[col.name]:
+            col = col.astype(str)
+        exact_rank = col.str.fullmatch(string, case=case_sensitive) * 200
+        synonym_rank = (
+            col.str.match(rf"(?:^|.*\|){string}(?:\|.*|$)", case=case_sensitive) * 200
+        )
+        sub_rank = (
+            col.str.match(
+                rf"(?:^|.*[ \|\.,;:]){string}(?:[ \|\.,;:].*|$)", case=case_sensitive
             )
-        df_exp = df[[field]].copy()
-        target_column = field
+            * 10
+        )
+        startswith_rank = (
+            col.str.match(rf"(?:^|\|){string}[^ ]*(\||$)", case=case_sensitive) * 8
+        )
+        right_rank = col.str.match(rf"(?:^|.*[ \|]){string}.*", case=case_sensitive) * 2
+        left_rank = (
+            col.str.match(rf".*{string}(?:$|[ \|\.,;:].*)", case=case_sensitive) * 2
+        )
+        contains_rank = col.str.contains(string, case=case_sensitive).astype("int32")
+        return (
+            exact_rank
+            + synonym_rank
+            + sub_rank
+            + startswith_rank
+            + right_rank
+            + left_rank
+            + contains_rank
+        )
 
-    # add matching scores as a __ratio__ column
-    ratios = _fuzz(
-        string=string,
-        iterable=df_exp[target_column],
-        case_sensitive=case_sensitive,
-        limit=limit,
-    )
-    if ratios is None:
-        return pd.DataFrame(columns=df.columns)
-    df_exp["__ratio__"] = ratios
-
-    if limit is not None:
-        df_exp = df_exp[~df_exp["__ratio__"].isna()]
-    # only keep the max score between field and synonyms for each entry
-    # here groupby is also used to remove duplicates of field values
-    df_exp_grouped = df_exp.groupby(field).max("__ratio__")
-    # subset to original field values (as synonyms were mixed in before)
-    df_exp_grouped = df_exp_grouped[df_exp_grouped.index.isin(df[field])]
-    df_scored = df.set_index(field).loc[df_exp_grouped.index]
-    df_scored["__ratio__"] = df_exp_grouped["__ratio__"]
-
-    return df_scored.sort_values("__ratio__", ascending=False)
+    rank = df_contains.apply(ranks).sum(axis=1)
+    df_contains["rank"] = rank
+    df_result = df_contains.loc[rank.sort_values(ascending=False).index]
+    return df_result if limit is None else df_result.head(limit)
