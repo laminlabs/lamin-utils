@@ -63,7 +63,7 @@ def test_search_case_sensitive(df):
     res = search(df=df, string="b cell", case_sensitive=True)
     assert len(res) == 0
     res = search(df=df, string="b cell", case_sensitive=False)
-    assert res.iloc[0].name == "B cell"
+    assert res.iloc[0]["name"] == "B cell"
 
 
 def test_search_empty_df():
