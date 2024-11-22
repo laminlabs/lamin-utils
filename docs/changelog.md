@@ -3,6 +3,7 @@
 <!-- prettier-ignore -->
 Name | PR | Developer | Date | Version
 --- | --- | --- | --- | ---
+🎨 Make search consistent with the lamindb implementation | [95](https://github.com/laminlabs/lamin-utils/pull/95) | [Koncopd](https://github.com/Koncopd) | 2024-11-22 |
 🐛 Fix standardize exact matches | [94](https://github.com/laminlabs/lamin-utils/pull/94) | [Zethson](https://github.com/Zethson) | 2024-11-20 |
 📝 Use CanCurate instead of CanValidate in docs | [93](https://github.com/laminlabs/lamin-utils/pull/93) | [Koncopd](https://github.com/Koncopd) | 2024-11-18 |
 🐛 Raise TypeError for mismatching validation types & Python 3.12 support | [89](https://github.com/laminlabs/lamin-utils/pull/89) | [Zethson](https://github.com/Zethson) | 2024-11-08 |
