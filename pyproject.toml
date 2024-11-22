@@ -23,7 +23,6 @@ Home = "https://github.com/laminlabs/lamin-utils"
 [project.optional-dependencies]
 dev = [
     "pandas",  # lookup
-    "rapidfuzz",  # search
     "pre-commit",
     "nox",
     "pytest>=6.0",
