@@ -110,7 +110,7 @@ def test_search_empty_df():
     assert res.shape == (0, 3)
 
 
-def test_escape_string():
+def test_escape_string(df):
     res = search(df=df, string="cat[")
     assert len(res) == 1
     assert res.iloc[0]["name"] == "cat[*_*]"
