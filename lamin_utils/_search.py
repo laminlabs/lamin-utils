@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pandas import DataFrame, Series
 
 
+# needed to filter out everything that doesn't contain `string`
 def _contains(col: Series, string: str, case_sensitive: bool, fields_convert: dict):
     if col.name not in fields_convert:
         return [False] * len(col)
@@ -14,7 +16,14 @@ def _contains(col: Series, string: str, case_sensitive: bool, fields_convert: di
     return col.str.contains(string, case=case_sensitive)
 
 
-def _ranks(col: Series, string: str, case_sensitive: bool, fields_convert: dict):
+# apply ranking based on rules
+# `string` - escaped search query,
+def _ranks(
+    col: Series,
+    string: str,
+    case_sensitive: bool,
+    fields_convert: dict,
+):
     if col.name not in fields_convert:
         return [0] * len(col)
     if fields_convert[col.name]:
@@ -91,6 +100,8 @@ def search(
         fields = [field] if isinstance(field, str) else field
         for f in fields:
             fields_convert[f] = not is_string_dtype(df[f])
+
+    string = re.escape(string)
 
     contains = lambda col: _contains(col, string, case_sensitive, fields_convert)
     df_contains = df.loc[df.apply(contains).any(axis=1)]
