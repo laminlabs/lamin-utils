@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pandas import DataFrame, Series
 
 
+# needed to filter out everything that doesn't contain `string`
 def _contains(col: Series, string: str, case_sensitive: bool, fields_convert: dict):
     if col.name not in fields_convert:
         return [False] * len(col)
@@ -14,26 +16,41 @@ def _contains(col: Series, string: str, case_sensitive: bool, fields_convert: di
     return col.str.contains(string, case=case_sensitive)
 
 
-def _ranks(col: Series, string: str, case_sensitive: bool, fields_convert: dict):
+# apply ranking based on rules
+# `string` - search query
+# `string_regex` - escaped search query, the argument is just for caching,
+# to avoid recompute of escaping on every call
+def _ranks(
+    col: Series,
+    string: str,
+    string_regex: str,
+    case_sensitive: bool,
+    fields_convert: dict,
+):
     if col.name not in fields_convert:
         return [0] * len(col)
     if fields_convert[col.name]:
         col = col.astype(str)
     exact_rank = col.str.fullmatch(string, case=case_sensitive) * 200
     synonym_rank = (
-        col.str.match(rf"(?:^|.*\|){string}(?:\|.*|$)", case=case_sensitive) * 200
+        col.str.match(rf"(?:^|.*\|){string_regex}(?:\|.*|$)", case=case_sensitive) * 200
     )
     sub_rank = (
         col.str.match(
-            rf"(?:^|.*[ \|\.,;:]){string}(?:[ \|\.,;:].*|$)", case=case_sensitive
+            rf"(?:^|.*[ \|\.,;:]){string_regex}(?:[ \|\.,;:].*|$)", case=case_sensitive
         )
         * 10
     )
     startswith_rank = (
-        col.str.match(rf"(?:^|.*\|){string}[^ ]*(?:\|.*|$)", case=case_sensitive) * 8
+        col.str.match(rf"(?:^|.*\|){string_regex}[^ ]*(?:\|.*|$)", case=case_sensitive)
+        * 8
     )
-    right_rank = col.str.match(rf"(?:^|.*[ \|]){string}.*", case=case_sensitive) * 2
-    left_rank = col.str.match(rf".*{string}(?:$|[ \|\.,;:].*)", case=case_sensitive) * 2
+    right_rank = (
+        col.str.match(rf"(?:^|.*[ \|]){string_regex}.*", case=case_sensitive) * 2
+    )
+    left_rank = (
+        col.str.match(rf".*{string_regex}(?:$|[ \|\.,;:].*)", case=case_sensitive) * 2
+    )
     contains_rank = col.str.contains(string, case=case_sensitive).astype("int32")
     return (
         exact_rank
@@ -97,7 +114,9 @@ def search(
     if len(df_contains) == 0:
         return df_contains
 
-    ranks = lambda col: _ranks(col, string, case_sensitive, fields_convert)
+    ranks = lambda col: _ranks(
+        col, string, re.escape(string), case_sensitive, fields_convert
+    )
     rank = df_contains.apply(ranks).sum(axis=1)
 
     if _show_rank:

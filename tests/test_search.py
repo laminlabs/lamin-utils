@@ -34,6 +34,13 @@ def df():
             "description": "A Specialized Cardiac Myocyte In The Sinoatrial And Atrioventricular Nodes. The Cell Is Slender And Fusiform Confined To The Nodal Center, Circumferentially Arranged Around The Nodal Artery.",
             "children": ["CL:1000409", "CL:1000410"],
         },
+        {
+            "ontology_id": "",
+            "name": "cat[*_*]",
+            "synonyms": "",
+            "description": "",
+            "children": [],
+        },
     ]
     return pd.DataFrame.from_records(records)
 
@@ -101,3 +108,13 @@ def test_search_case_sensitive(df):
 def test_search_empty_df():
     res = search(pd.DataFrame(columns=["a", "b", "c"]), string="")
     assert res.shape == (0, 3)
+
+
+def test_escape_string():
+    res = search(df=df, string="cat[")
+    assert len(res) == 1
+    assert res.iloc[0]["name"] == "cat[*_*]"
+
+    res = search(df=df, string="*_*")
+    assert len(res) == 1
+    assert res.iloc[0]["name"] == "cat[*_*]"
