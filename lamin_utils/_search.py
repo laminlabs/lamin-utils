@@ -17,8 +17,7 @@ def _contains(col: Series, string: str, case_sensitive: bool, fields_convert: di
 
 
 # apply ranking based on rules
-# `string` - escaped search query, the argument is just for caching,
-# to avoid recompute of escaping on every call
+# `string` - escaped search query,
 def _ranks(
     col: Series,
     string: str,
