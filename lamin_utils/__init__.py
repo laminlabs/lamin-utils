@@ -1,6 +1,6 @@
 """Lamin Utils."""
 
-__version__ = "0.13.9"
+__version__ = "0.13.10"
 
 from ._core import colors
 from ._logger import logger
