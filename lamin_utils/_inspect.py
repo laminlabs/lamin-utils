@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
-from ._core import colors
+from ._colors import colors
 from ._logger import logger
 from ._map_synonyms import map_synonyms, to_str
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     import numpy as np
     import pandas as pd
 
@@ -262,7 +264,7 @@ def _validate_logging(result: InspectResult, field: str | None = None) -> None:
         if len(result.non_validated) > 10:
             print_values += ", ..."
         warn_msg = (
-            f"{colors.yellow(f'{len(result.non_validated)} unique term{s}')} ({(100-result.frac_validated):.2f}%)"
+            f"{colors.yellow(f'{len(result.non_validated)} unique term{s}')} ({(100 - result.frac_validated):.2f}%)"
             f" {are} not validated{field_msg}: {colors.yellow(print_values)}"
         )
         if len(empty_warn_msg) > 0:
