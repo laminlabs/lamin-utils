@@ -3,6 +3,7 @@
 <!-- prettier-ignore -->
 Name | PR | Developer | Date | Version
 --- | --- | --- | --- | ---
+🎨 New development decorators | [98](https://github.com/laminlabs/lamin-utils/pull/98) | [Zethson](https://github.com/Zethson) | 2025-01-13 |
 🐛 Escape search string before passing to regex to rank | [97](https://github.com/laminlabs/lamin-utils/pull/97) | [Koncopd](https://github.com/Koncopd) | 2024-12-09 |
 🎨 Make search consistent with the lamindb implementation | [95](https://github.com/laminlabs/lamin-utils/pull/95) | [Koncopd](https://github.com/Koncopd) | 2024-11-22 |
 🐛 Fix standardize exact matches | [94](https://github.com/laminlabs/lamin-utils/pull/94) | [Zethson](https://github.com/Zethson) | 2024-11-20 |
