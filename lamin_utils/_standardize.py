@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Any, Dict, Iterable, List, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal
 
 from ._logger import logger
 from ._map_synonyms import map_synonyms
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 def standardize(
