@@ -31,233 +31,130 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """Logging and Profiling."""
 
+from __future__ import annotations
+
 import logging
+from datetime import datetime, timezone
+from typing import Any
 
-# import platform
-import sys
-from datetime import datetime, timedelta, timezone
-from logging import CRITICAL, DEBUG, ERROR, INFO, WARNING, getLevelName
-from typing import Optional
+from rich.console import Console
+from rich.logging import RichHandler
 
-# sys.stdout inside jupyter doesn't have reconfigure
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(errors="backslashreplace")  # type: ignore
-
-
-HINT = 15
-SAVE = 21
-SUCCESS = 25
-PRINT = 41  # always print
-IMPORTANT = 31  # at warning level
-logging.addLevelName(HINT, "HINT")
-logging.addLevelName(SAVE, "SAVE")
-logging.addLevelName(SUCCESS, "SUCCESS")
-logging.addLevelName(PRINT, "PRINT")
-logging.addLevelName(IMPORTANT, "IMPORTANT")
-
-
-VERBOSITY_TO_LOGLEVEL = {
-    0: "ERROR",  # 40
-    1: "WARNING",  # 30
-    2: "SUCCESS",  # 25
-    3: "INFO",  # 20
-    4: "HINT",  # 15
-    5: "DEBUG",  # 10
-}
-
+HINT, SAVE, SUCCESS, PRINT, IMPORTANT = 15, 21, 25, 41, 31
+for name in ["HINT", "SAVE", "SUCCESS", "PRINT", "IMPORTANT"]:
+    logging.addLevelName(globals()[name], name)
 
 LEVEL_TO_ICONS = {
-    40: "✗",  # error
-    31: "→",  # important
-    30: "!",  # warning
-    25: "✓",  # success
-    21: "✓",  # save
-    20: "•",  # info
-    15: "•",  # hint
-    10: "•",  # debug
+    logging.ERROR: "[red]✗[/]",
+    logging.CRITICAL: "[red]✗[/]",
+    IMPORTANT: "[green]→[/]",
+    logging.WARNING: "[yellow]![/]",
+    SUCCESS: "[green]✓[/]",
+    SAVE: "[green]✓[/]",
+    logging.INFO: "[blue]•[/]",
+    HINT: "[cyan]•[/]",
+    logging.DEBUG: "[grey50]•[/]",
 }
-
-# Add color codes
-LEVEL_TO_COLORS = {
-    40: "\033[91m",  # Red for error
-    31: "\033[92m",  # Green for important
-    30: "\033[93m",  # Yellow for warning
-    25: "\033[92m",  # Green for success
-    21: "\033[92m",  # Green for save
-    20: "\033[94m",  # Blue for info
-    15: "\033[96m",  # Cyan for hint
-    10: "\033[90m",  # Grey for debug
-}
-
-RESET_COLOR = "\033[0m"
 
 
 class RootLogger(logging.RootLogger):
     def __init__(self, level="INFO"):
         super().__init__(level)
         self.propagate = False
-        self._verbosity: int = 1
+        self._verbosity = 1
         self.indent = ""
-        RootLogger.manager = logging.Manager(self)
+        self.handler = RichHandler(
+            console=Console(),
+            show_time=False,
+            show_path=False,
+            show_level=False,
+            markup=True,
+        )
+        self.addHandler(self.handler)
 
-    def log(  # type: ignore
+    def _log_wrapper(
         self,
         level: int,
-        msg: str,
-        *,
-        extra: Optional[dict] = None,
-        time: datetime = None,
-        deep: Optional[str] = None,
+        msg: Any,
+        *args: Any,
+        time: datetime | None = None,
+        deep: str | None = None,
+        **kwargs: Any,
     ) -> datetime:
-        """Log message with level and return current time.
-
-        Args:
-            level: Logging level.
-            msg: Message to display.
-            time: A time in the past. If this is passed, the time difference from then
-                to now is appended to `msg` as ` (HH:MM:SS)`.
-                If `msg` contains `{time_passed}`, the time difference is instead
-                inserted at that position.
-            deep: If the current verbosity is higher than the log function’s level,
-                this gets displayed as well
-            extra: Additional values you can specify in `msg` like `{time_passed}`.
-        """
         now = datetime.now(timezone.utc)
-        time_passed: timedelta = None if time is None else now - time  # type: ignore
-        extra = {
-            **(extra or {}),
-            "deep": (
-                deep
-                if getLevelName(VERBOSITY_TO_LOGLEVEL[self._verbosity]) < level
-                else None
-            ),
-            "time_passed": time_passed,
-        }
-        msg = f"{self.indent}{msg}"
-        super().log(level, msg, extra=extra)
+        icon = LEVEL_TO_ICONS.get(level, "")
+        msg = f"{icon} {self.indent}{msg}" if icon else f"{self.indent}{msg}"
+
+        if time:
+            diff = now - time
+            msg = f"{msg} ({diff})"
+        if deep and self._verbosity >= level:
+            msg = f"{msg}: {deep}"
+
+        super().log(level, msg, *args, **kwargs)
         return now
 
-    def critical(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
-        return self.log(CRITICAL, msg, time=time, deep=deep, extra=extra)
+    def critical(self, msg, *args, **kwargs):
+        return self._log_wrapper(logging.CRITICAL, msg, *args, **kwargs)
 
-    def error(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
-        return self.log(ERROR, msg, time=time, deep=deep, extra=extra)
+    def error(self, msg, *args, **kwargs):
+        return self._log_wrapper(logging.ERROR, msg, *args, **kwargs)
 
-    def warning(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
-        return self.log(WARNING, msg, time=time, deep=deep, extra=extra)
+    def warning(self, msg, *args, **kwargs):
+        return self._log_wrapper(logging.WARNING, msg, *args, **kwargs)
 
-    def important(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
-        return self.log(IMPORTANT, msg, time=time, deep=deep, extra=extra)
+    def info(self, msg, *args, **kwargs):
+        return self._log_wrapper(logging.INFO, msg, *args, **kwargs)
 
-    def success(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
-        return self.log(SUCCESS, msg, time=time, deep=deep, extra=extra)
+    def debug(self, msg, *args, **kwargs):
+        return self._log_wrapper(logging.DEBUG, msg, *args, **kwargs)
 
-    def info(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
-        return self.log(INFO, msg, time=time, deep=deep, extra=extra)
+    def important(self, msg, *args, **kwargs):
+        return self._log_wrapper(IMPORTANT, msg, *args, **kwargs)
 
-    def save(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
-        return self.log(SAVE, msg, time=time, deep=deep, extra=extra)
+    def success(self, msg, *args, **kwargs):
+        return self._log_wrapper(SUCCESS, msg, *args, **kwargs)
 
-    def hint(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
-        return self.log(HINT, msg, time=time, deep=deep, extra=extra)
+    def save(self, msg, *args, **kwargs):
+        return self._log_wrapper(SAVE, msg, *args, **kwargs)
 
-    def debug(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
-        return self.log(DEBUG, msg, time=time, deep=deep, extra=extra)
+    def hint(self, msg, *args, **kwargs):
+        return self._log_wrapper(HINT, msg, *args, **kwargs)
 
-    def print(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
-        return self.log(PRINT, msg, time=time, deep=deep, extra=extra)
+    def print(self, msg, *args, **kwargs):
+        return self._log_wrapper(PRINT, msg, *args, **kwargs)
 
-    # backward compat
-    def download(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
-        return self.log(SAVE, msg, time=time, deep=deep, extra=extra)
+    def download(self, msg, *args, **kwargs):
+        return self.save(msg, *args, **kwargs)
 
+    def set_verbosity(self, level: int) -> None:
+        if level not in {0, 1, 2, 3, 4, 5}:
+            raise ValueError("verbosity must be between 0 and 5")
+        self._verbosity = level
+        level_map = {
+            0: logging.ERROR,
+            1: logging.WARNING,
+            2: SUCCESS,
+            3: logging.INFO,
+            4: HINT,
+            5: logging.DEBUG,
+        }
+        self.setLevel(level_map[level])
 
-class _LogFormatter(logging.Formatter):
-    def __init__(
-        self, fmt="{levelname}: {message}", datefmt="%Y-%m-%d %H:%M", style="{"
-    ):
-        super().__init__(fmt, datefmt, style)
+    def mute(self):
+        class Muted:
+            def __init__(self, logger):
+                self.logger = logger
+                self.prev_level = None
 
-    def base_format(self, record: logging.LogRecord):
-        # if platform.system() == "Windows":
-        #     return f"{record.levelname}:" + " {message}"
-        # else:
-        if LEVEL_TO_ICONS.get(record.levelno) is not None:
-            color = LEVEL_TO_COLORS.get(record.levelno, "")
-            icon = LEVEL_TO_ICONS[record.levelno]
-            return f"{color}{icon}{RESET_COLOR}" + " {message}"
-        else:
-            return "{message}"
+            def __enter__(self):
+                self.prev_level = self.logger._verbosity
+                self.logger.set_verbosity(0)
 
-    def format(self, record: logging.LogRecord):
-        format_orig = self._style._fmt
-        self._style._fmt = self.base_format(record)
-        if record.time_passed:  # type: ignore
-            if "{time_passed}" in record.msg:
-                record.msg = record.msg.replace(
-                    "{time_passed}",
-                    record.time_passed,  # type: ignore
-                )
-            else:
-                self._style._fmt += " ({time_passed})"
-        if record.deep:  # type: ignore
-            record.msg = f"{record.msg}: {record.deep}"  # type: ignore
-        result = logging.Formatter.format(self, record)
-        self._style._fmt = format_orig
-        return result
+            def __exit__(self, *_):
+                self.logger.set_verbosity(self.prev_level)
+
+        return Muted(self)
 
 
 logger = RootLogger()
-
-
-def set_handler(logger):
-    h = logging.StreamHandler(stream=sys.stdout)
-    h.setFormatter(_LogFormatter())
-    h.setLevel(logger.level)
-    if len(logger.handlers) == 1:
-        logger.removeHandler(logger.handlers[0])
-    elif len(logger.handlers) > 1:
-        raise RuntimeError("Lamin's root logger somehow got more than one handler")
-    logger.addHandler(h)
-
-
-set_handler(logger)
-
-
-def set_log_level(logger, level: int):
-    logger.setLevel(level)
-    (h,) = logger.handlers  # can only be 1
-    h.setLevel(level)
-
-
-# this also sets it for the handler
-RootLogger.set_level = set_log_level  # type: ignore
-
-
-def set_verbosity(logger, verbosity: int):
-    if verbosity not in VERBOSITY_TO_LOGLEVEL:
-        raise ValueError(
-            f"verbosity needs to be one of {set(VERBOSITY_TO_LOGLEVEL.keys())}"
-        )
-    logger.set_level(VERBOSITY_TO_LOGLEVEL[verbosity])
-    logger._verbosity = verbosity
-
-
-RootLogger.set_verbosity = set_verbosity  # type: ignore
-
-
-def mute(logger):
-    """Context manager to mute logger."""
-
-    class Muted:
-        def __enter__(self):
-            self.original_verbosity = logger._verbosity
-            logger.set_verbosity(0)
-
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            logger.set_verbosity(self.original_verbosity)
-
-    return Muted()
-
-
-RootLogger.mute = mute  # type: ignore
