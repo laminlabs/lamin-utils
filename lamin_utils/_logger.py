@@ -49,11 +49,13 @@ SAVE = 21
 SUCCESS = 25
 PRINT = 41  # always print
 IMPORTANT = 31  # at warning level
+IMPORTANT_HINT = 32  # at warning level
 logging.addLevelName(HINT, "HINT")
 logging.addLevelName(SAVE, "SAVE")
 logging.addLevelName(SUCCESS, "SUCCESS")
 logging.addLevelName(PRINT, "PRINT")
 logging.addLevelName(IMPORTANT, "IMPORTANT")
+logging.addLevelName(IMPORTANT_HINT, "IMPORTANT_HINT")
 
 
 VERBOSITY_TO_LOGLEVEL = {
@@ -68,6 +70,7 @@ VERBOSITY_TO_LOGLEVEL = {
 
 LEVEL_TO_ICONS = {
     40: "✗",  # error
+    32: "•",  # important hint
     31: "→",  # important
     30: "!",  # warning
     25: "✓",  # success
@@ -80,6 +83,7 @@ LEVEL_TO_ICONS = {
 # Add color codes
 LEVEL_TO_COLORS = {
     40: "\033[91m",  # Red for error
+    32: "\033[94m",  # Blue for important hint
     31: "\033[92m",  # Green for important
     30: "\033[93m",  # Yellow for warning
     25: "\033[92m",  # Green for success
@@ -148,6 +152,9 @@ class RootLogger(logging.RootLogger):
 
     def important(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
         return self.log(IMPORTANT, msg, time=time, deep=deep, extra=extra)
+
+    def important_hint(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
+        return self.log(IMPORTANT_HINT, msg, time=time, deep=deep, extra=extra)
 
     def success(self, msg, *, time=None, deep=None, extra=None) -> datetime:  # type: ignore
         return self.log(SUCCESS, msg, time=time, deep=deep, extra=extra)
