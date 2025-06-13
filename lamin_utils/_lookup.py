@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import re
+import warnings
 from collections import namedtuple
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from ._logger import logger
 
@@ -51,6 +52,94 @@ def _create_df_dict(
     return df_dict
 
 
+class _ListValueWrapper:
+    """Wrapper that warns when a list value is accessed and applies keep strategy."""
+
+    def __init__(
+        self,
+        field_name: str,
+        values: list,
+        keep: Literal["first", "last", False],
+        return_field: str | None = None,
+    ):
+        self._field_name = field_name
+        self._values = values
+        self._keep = keep
+        self._return_field = return_field
+        self._accessed = False
+
+    def _warn_and_process(self):
+        """Issue warning and return processed value."""
+        if not self._accessed:
+            logger.warning(
+                f"{len(self._values)} records found for '{self._field_name}'. "
+                f"Returning based on keep='{self._keep}'."
+            )
+            self._accessed = True
+
+        # Apply keep strategy
+        if self._keep == "first":
+            selected_value = self._values[0] if self._values else None
+        elif self._keep == "last":
+            selected_value = self._values[-1] if self._values else None
+        elif self._keep is False:
+            selected_value = self._values
+        else:
+            selected_value = self._values[0] if self._values else None
+
+        # Apply return_field if specified
+        if self._return_field is not None:
+            if self._keep is False and isinstance(selected_value, list):
+                return [
+                    getattr(item, self._return_field)
+                    if hasattr(item, self._return_field)
+                    else item
+                    for item in selected_value
+                ]
+            elif hasattr(selected_value, self._return_field):
+                return getattr(selected_value, self._return_field)
+
+        return selected_value
+
+    def __getattr__(self, name):
+        """Intercept any attribute access to trigger warning."""
+        processed_value = self._warn_and_process()
+        return getattr(processed_value, name)
+
+    def __str__(self):
+        """String representation triggers warning."""
+        return str(self._warn_and_process())
+
+    def __repr__(self):
+        """Representation triggers warning."""
+        return repr(self._warn_and_process())
+
+    def __iter__(self):
+        """Iteration triggers warning."""
+        processed_value = self._warn_and_process()
+        return iter(processed_value)
+
+    def __len__(self):
+        """Length check triggers warning."""
+        processed_value = self._warn_and_process()
+        return len(processed_value)
+
+    def __getitem__(self, key):
+        """Indexing triggers warning."""
+        processed_value = self._warn_and_process()
+        return processed_value[key]
+
+    def __bool__(self):
+        """Boolean conversion triggers warning."""
+        processed_value = self._warn_and_process()
+        return bool(processed_value)
+
+    def __eq__(self, other):
+        """Equality comparison triggers warning."""
+        processed_value = self._warn_and_process()
+        return processed_value == other
+
+
 class Lookup:
     """Lookup object with dot and [] access."""
 
@@ -63,6 +152,7 @@ class Lookup:
         df: Any = None,
         values: Iterable | None = None,
         records: list | None = None,
+        keep: Literal["first", "last", False] = "first",
     ) -> None:
         self._tuple_name = tuple_name
         if df is not None:
@@ -82,6 +172,7 @@ class Lookup:
         lkeys = self._to_lookup_keys(values=values, prefix=prefix)  # type:ignore
         self._lookup_dict = self._create_lookup_dict(lkeys=lkeys, df_dict=self._df_dict)
         self._prefix = prefix
+        self._keep = keep
 
     def _to_lookup_keys(self, values: Iterable, prefix: str) -> dict:
         """Convert a list of strings to tab-completion allowed formats.
@@ -131,16 +222,34 @@ class Lookup:
 
     def lookup(self, return_field: str | None = None) -> tuple:
         """Lookup records with dot access."""
-        # Names are invalid if they are conflict with Python keywords.
-        if "class" in self._lookup_dict:
-            self._lookup_dict[f"{self._prefix.lower()}_class"] = self._lookup_dict.pop(
+        # Create a copy to avoid modifying the original
+        lookup_dict_copy = self._lookup_dict.copy()
+
+        # Names are invalid if they conflict with Python keywords.
+        if "class" in lookup_dict_copy:
+            lookup_dict_copy[f"{self._prefix.lower()}_class"] = lookup_dict_copy.pop(
                 "class"
             )
-        keys: list = list(self._lookup_dict.keys()) + ["dict"]
+
+        # Process values, wrapping lists in warning wrapper
+        processed_dict = {}
+        for key, value in lookup_dict_copy.items():
+            if isinstance(value, list) and len(value) > 1:
+                # Wrap list values that have more than one item
+                processed_dict[key] = _ListValueWrapper(
+                    key, value, self._keep, return_field
+                )
+            else:
+                # Handle single values or single-item lists
+                if isinstance(value, list) and len(value) == 1:
+                    value = value[0]  # Unwrap single-item lists
+
+                if return_field is not None and hasattr(value, return_field):
+                    processed_dict[key] = getattr(value, return_field)
+                else:
+                    processed_dict[key] = value
+
+        keys: list = list(processed_dict.keys()) + ["dict"]
         MyTuple = namedtuple("Lookup", keys)  # type:ignore
-        if return_field is not None:
-            self._lookup_dict = {
-                k: v.__getattribute__(return_field)
-                for k, v in self._lookup_dict.items()
-            }
-        return MyTuple(**self._lookup_dict, dict=self.dict)  # type:ignore
+
+        return MyTuple(**processed_dict, dict=self.dict)  # type:ignore
