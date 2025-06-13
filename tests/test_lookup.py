@@ -17,11 +17,12 @@ def test_lookup():
         }
     )
 
-    inst = Lookup(df=df, field="name", tuple_name="TestTuple", prefix="prefix")
+    inst = Lookup(
+        df=df, field="name", tuple_name="TestTuple", prefix="prefix", keep=False
+    )
     lookup = inst.lookup()
 
     assert len(lookup.sample_1) == 3
-    assert isinstance(lookup.sample_1, list)
     lookup_sample_1_dicts = [i._asdict() for i in lookup.sample_1]
     assert {"name": "Sample 1", "meta1": "metadata~1~1"} in lookup_sample_1_dicts
     assert {"name": "Sample 1", "meta1": "metadata~1"} in lookup_sample_1_dicts
@@ -48,3 +49,21 @@ def test_lookup():
 
 def test_lookup_empty_df():
     assert Lookup(df=pd.DataFrame(columns=["name"]), field="name").lookup().dict() == {}
+
+
+def test_lookup_multiple_records():
+    df = pd.DataFrame(
+        {
+            "name": ["experiment", "experiment"],
+            "value": ["value1", "value2"],
+        }
+    )
+
+    lookup = Lookup(df=df, field="name", keep="first").lookup()
+    assert lookup.experiment.value == "value1"
+
+    lookup = Lookup(df=df, field="name", keep="last").lookup()
+    assert lookup.experiment.value == "value2"
+
+    lookup = Lookup(df=df, field="name", keep=False).lookup()
+    assert len(lookup.experiment) == 2
