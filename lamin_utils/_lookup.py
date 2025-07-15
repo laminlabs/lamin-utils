@@ -14,13 +14,14 @@ if TYPE_CHECKING:
 def _append_records_to_list(df_dict: dict, value: str, record) -> None:
     """Append unique records to a list."""
     values_list = df_dict[value]
+
     if not isinstance(values_list, list):
         values_list = [values_list]
     try:
-        values_set = set(values_list)
-        values_set.add(record)
-        df_dict[value] = list(values_set)
+        values_list.append(record)
+        df_dict[value] = list(dict.fromkeys(values_list))
     except TypeError:
+        values_list.append(record)
         df_dict[value] = values_list
 
 
