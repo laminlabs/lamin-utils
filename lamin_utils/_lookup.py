@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-import warnings
 from collections import namedtuple
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -14,12 +13,11 @@ if TYPE_CHECKING:
 def _append_records_to_list(df_dict: dict, value: str, record) -> None:
     """Append unique records to a list."""
     values_list = df_dict[value]
+
     if not isinstance(values_list, list):
         values_list = [values_list]
     try:
-        values_set = set(values_list)
-        values_set.add(record)
-        df_dict[value] = list(values_set)
+        df_dict[value] = list(dict.fromkeys(values_list + [record]))
     except TypeError:
         df_dict[value] = values_list
 
