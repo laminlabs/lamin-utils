@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-import warnings
 from collections import namedtuple
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -18,10 +17,8 @@ def _append_records_to_list(df_dict: dict, value: str, record) -> None:
     if not isinstance(values_list, list):
         values_list = [values_list]
     try:
-        values_list.append(record)
-        df_dict[value] = list(dict.fromkeys(values_list))
+        df_dict[value] = list(dict.fromkeys(values_list + [record]))
     except TypeError:
-        values_list.append(record)
         df_dict[value] = values_list
 
 
