@@ -339,3 +339,18 @@ def test_standardize_keep(genes):
         "ENSG00000139618",
         ["ENSG00000012048-1", "ENSG00000012048-1-1"],
     ]
+
+
+def test_standardize_no_synonym_column(genes):
+    _, df = genes
+    assert standardize(
+        df,
+        identifiers=["A1CF", "FANCD1", "BRCA1-1"],
+        field="symbol",
+        return_field="ensembl_gene_id",
+        synonyms_field=None,
+        return_mapper=True,
+    ) == {
+        "A1CF": "ENSG00000148584",
+        "BRCA1-1": "ENSG00000012048-1",
+    }

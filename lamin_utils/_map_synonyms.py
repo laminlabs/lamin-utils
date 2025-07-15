@@ -68,7 +68,7 @@ def map_synonyms(
         raise KeyError(
             f"field '{field}' is invalid! Available fields are: {list(df.columns)}"
         )
-    if synonyms_field not in df.columns:
+    if synonyms_field is not None and synonyms_field not in df.columns:
         raise KeyError(
             f"synonyms_field '{synonyms_field}' is invalid! Available fields"
             f" are: {list(df.columns)}"
