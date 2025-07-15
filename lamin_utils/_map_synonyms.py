@@ -168,11 +168,10 @@ def not_empty_none_na(values: Iterable) -> pd.Series:
     """Return values that are not empty string, None or NA."""
     import pandas as pd
 
-    series = (
-        pd.Series(values) if not isinstance(values, (pd.Series, pd.Index)) else values
-    )
+    if not isinstance(values, (pd.Series, pd.Index)):
+        values = pd.Series(values)
 
-    return series[pd.Series(series).infer_objects(copy=False).fillna("").astype(bool)]
+    return values[pd.Series(values).infer_objects(copy=False).fillna("").astype(bool)]  # type: ignore
 
 
 def explode_aggregated_column_to_map(
