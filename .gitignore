@@ -108,3 +108,4 @@ docs/conf.py
 _docs_tmp*
 test.ipynb
 test-bug
+test-benchmarking.ipynb
