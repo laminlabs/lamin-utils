@@ -192,7 +192,11 @@ class _LogFormatter(logging.Formatter):
         if LEVEL_TO_ICONS.get(record.levelno) is not None:
             color = LEVEL_TO_COLORS.get(record.levelno, "")
             icon = LEVEL_TO_ICONS[record.levelno]
-            return f"{color}{icon}{RESET_COLOR}" + " {message}"
+            if color != "":
+                string = f"{color}{icon}{RESET_COLOR}"
+            else:
+                string = f"{icon}"
+            return f"{string}" + " {message}"
         else:
             return "{message}"
 
