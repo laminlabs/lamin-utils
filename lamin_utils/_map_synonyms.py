@@ -126,10 +126,14 @@ def map_synonyms(
                 unmapped_mask, "__lookup__"
             ].map(syn_map)
 
-    # Log mapping statistics
-    n_mapped = (~mapped_df["mapped"].isna()).sum()
+    # Log mapping statistics (only count actual changes, not exact matches)
+    changed_mask = (~mapped_df["mapped"].isna()) & (
+        mapped_df["mapped"] != mapped_df["orig_ids"]
+    )
+    n_mapped = changed_mask.sum()
     if n_mapped > 0 and not mute:
-        logger.info(f"standardized {n_mapped}/{n_input} terms")
+        s = "" if n_mapped == 1 else "s"
+        logger.info(f"standardized {n_mapped}/{n_input} term{s}")
 
     # Return results
     if return_mapper:
