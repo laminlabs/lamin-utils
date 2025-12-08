@@ -60,6 +60,11 @@ def genes():
             "synonyms": "BRCA1-1-synonym",
             "ensembl_gene_id": "ENSG00000012048-2",
         },
+        {
+            "symbol": "Brca1",
+            "synonyms": "BRCC1",
+            "ensembl_gene_id": "ENSMUSG00000017146",
+        },
     ]
 
     df = pd.DataFrame.from_records(records)
@@ -189,7 +194,7 @@ def test_early_mismatch():
         case_sensitive=False,
         synonyms_field="synonyms",
     )
-    assert result == ["plasmablast", "conventional dendritic cell"]
+    assert result == ["Plasmablast", "conventional dendritic cell"]
 
 
 def test_map_synonyms_empty_df():
@@ -339,3 +344,59 @@ def test_standardize_keep(genes):
         "ENSG00000139618",
         ["ENSG00000012048-1", "ENSG00000012048-1-1"],
     ]
+
+
+def test_map_synonyms_field_match_first(genes):
+    _, df = genes
+
+    mapping = map_synonyms(
+        df=df,
+        identifiers=["Brca1"],
+        field="symbol",
+        synonyms_field="synonyms",
+    )
+    assert mapping == ["Brca1"]
+
+
+def test_map_synonyms_exact_match_priority():
+    """Test that exact field match takes priority over synonyms"""
+    df = pd.DataFrame(
+        {"symbol": ["Abca1", "ABCA1"], "synonyms": ["", "ABC1|TGD|HDLDT1"]}
+    )
+
+    # Exact match should win even though ABC1 synonym points to ABCA1
+    mapping = map_synonyms(df=df, identifiers=["Abca1"], field="symbol")
+    assert mapping == ["Abca1"]
+
+    # ABC1 should map to ABCA1 via synonym
+    mapping = map_synonyms(df=df, identifiers=["ABC1"], field="symbol")
+    assert mapping == ["ABCA1"]
+
+
+def test_map_synonyms_case_insensitive_field_before_synonym():
+    """Test that case-insensitive field match takes priority over synonyms"""
+    df = pd.DataFrame({"symbol": ["BRCA1", "GCLC"], "synonyms": ["", "BRCA1|GCS"]})
+
+    # brca1 should match BRCA1 field (case-insensitive), not GCLC via synonym
+    mapping = map_synonyms(
+        df=df, identifiers=["brca1"], field="symbol", case_sensitive=False
+    )
+    assert mapping == ["BRCA1"]
+
+
+def test_map_synonyms_priority_chain():
+    """Test full priority: exact > case-insensitive field > synonym"""
+    df = pd.DataFrame(
+        {"symbol": ["Gene1", "GENE1", "GENE2"], "synonyms": ["", "", "Gene1|G1"]}
+    )
+
+    mapping = map_synonyms(
+        df=df,
+        identifiers=["Gene1", "gene1", "G1"],
+        field="symbol",
+        case_sensitive=False,
+    )
+    # Gene1 -> exact match to Gene1
+    # gene1 -> case-insensitive match to Gene1 (first occurrence)
+    # G1 -> synonym match to GENE2
+    assert mapping == ["Gene1", "Gene1", "GENE2"]

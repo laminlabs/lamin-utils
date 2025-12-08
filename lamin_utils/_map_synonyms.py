@@ -23,123 +23,185 @@ def map_synonyms(
     keep: Literal["first", "last", False] = "first",
     mute_warning: bool = False,
 ) -> dict[str, str] | list[str]:
-    """Maps input identifiers against a concatenated synonyms column.
+    """Maps input identifiers against a field with synonym fallback.
 
-    Will also standardize casing.
+    Implements a three-tier matching priority:
+    1. Exact case-sensitive field match (preserves original casing)
+    2. Case-insensitive field match (when case_sensitive=False)
+    3. Synonym match (with optional case-insensitive matching)
 
     Args:
         df: Reference DataFrame.
         identifiers: Identifiers that will be mapped against a field.
-        return_mapper: If True, returns {input synonyms : standardized field name}.
+        field: The field representing the identifiers.
         case_sensitive: Whether the mapping is case sensitive.
+        return_mapper: If True, returns {input : standardized field name}.
+        mute: If True, suppresses logging of mapping statistics.
+        synonyms_field: The field representing the concatenated synonyms.
+        sep: Separator used to split synonyms.
         keep: {'first', 'last', False}, default 'first'
             When a synonym maps to multiple standardized values, determines
             which duplicates to mark as `pandas.DataFrame.duplicated`.
             - "first": returns the first mapped standardized value
             - "last": returns the last mapped standardized value
-            - False: returns all mapped standardized value
-        synonyms_field: The field representing the concatenated synonyms.
-        synonyms_sep: Which separator is used to separate synonyms.
-        field: The field representing the identifiers.
+            - False: returns all mapped standardized values
+        mute_warning: If True, suppresses warnings about list values when keep=False.
 
     Returns:
-        - If return_mapper is False: a list of mapped field values.
-        - If return_mapper is True: a dictionary of mapped values with mappable
-            identifiers as keys and values mapped to field as values.
+        - If return_mapper is False: a list of mapped field values in input order.
+        - If return_mapper is True: a dictionary mapping input identifiers to
+          standardized field values (only includes entries that were mapped).
     """
     import pandas as pd
 
     identifiers = list(identifiers)
-
-    # empty DataFrame or input
     n_input = len(identifiers)
+
+    # Handle empty inputs
     if (
         df.shape[0] == 0
         or n_input == 0
         or synonyms_field is None
         or synonyms_field == "None"
     ):
-        if return_mapper:
-            return {}
-        else:
-            return identifiers
+        return {} if return_mapper else identifiers
 
+    # Validate inputs
     if field not in df.columns:
         raise KeyError(
             f"field '{field}' is invalid! Available fields are: {list(df.columns)}"
         )
     if synonyms_field not in df.columns:
         raise KeyError(
-            f"synonyms_field '{synonyms_field}' is invalid! Available fields"
-            f" are: {list(df.columns)}"
+            f"synonyms_field '{synonyms_field}' is invalid! Available fields are: {list(df.columns)}"
         )
     if field == synonyms_field:
         raise KeyError("synonyms_field must be different from field!")
 
-    # A DataFrame indexed by the passed identifiers
-    mapped_df = pd.DataFrame(data={"orig_ids": identifiers})
-    mapped_df["__agg__"] = to_str(mapped_df["orig_ids"], case_sensitive=case_sensitive)
+    # Initialize mapping dataframe
+    mapped_df = pd.DataFrame({"orig_ids": identifiers})
+    mapped_df["__lookup__"] = to_str(
+        mapped_df["orig_ids"], case_sensitive=case_sensitive
+    )
+    mapped_df["mapped"] = pd.NA
 
-    # __agg__ is a column of identifiers based on case_sensitive
-    df["__agg__"] = to_str(df[field], case_sensitive=case_sensitive)
+    # Step 1: Try exact case-sensitive match (highest priority)
+    # This preserves original casing even when case_sensitive=False
+    exact_field_values = set(df[field].dropna().drop_duplicates())
+    exact_matches = mapped_df["orig_ids"].isin(exact_field_values)
+    mapped_df.loc[exact_matches, "mapped"] = mapped_df.loc[exact_matches, "orig_ids"]
 
-    # field_map is {"__agg__": field_value} for mappable values
-    field_map = pd.merge(mapped_df, df, on="__agg__").set_index("__agg__")[field]
+    # Step 2: For case-insensitive mode, try case-insensitive field matching
+    if not case_sensitive:
+        unmapped_mask = mapped_df["mapped"].isna()
+        if unmapped_mask.any():
+            # Build case-insensitive field map (keeps first occurrence)
+            df_field = df[[field]].dropna(subset=[field])
+            df_field["__lookup__"] = to_str(df_field[field], case_sensitive=False)
+            df_field = df_field.drop_duplicates(subset=["__lookup__"], keep="first")
+            field_map_lower = df_field.set_index("__lookup__")[field].to_dict()
 
-    unmapped_terms = set(mapped_df["__agg__"]) - set(field_map.index)
-    if unmapped_terms:
-        syn_map = explode_aggregated_column_to_map(
+            # Apply case-insensitive field map to unmapped entries
+            mapped_df.loc[unmapped_mask, "mapped"] = mapped_df.loc[
+                unmapped_mask, "__lookup__"
+            ].map(field_map_lower)
+
+    # Step 3: For still-unmapped terms, check synonyms
+    unmapped_mask = mapped_df["mapped"].isna()
+    if unmapped_mask.any():
+        unmapped_terms = set(mapped_df.loc[unmapped_mask, "__lookup__"])
+
+        syn_map = _build_synonym_map(
             df=df,
-            agg_col=synonyms_field,
-            target_col=field,
+            synonyms_field=synonyms_field,
+            field=field,
+            unmapped_terms=unmapped_terms,
+            case_sensitive=case_sensitive,
             keep=keep,
             sep=sep,
         )
 
-        if not case_sensitive:
-            # convert the synonyms to the same case_sensitive
-            syn_map.index = syn_map.index.str.lower()
-            # TODO: allow returning duplicated entries
-            syn_map = syn_map[syn_map.index.drop_duplicates()]
+        if syn_map:
+            mapped_df.loc[unmapped_mask, "mapped"] = mapped_df.loc[
+                unmapped_mask, "__lookup__"
+            ].map(syn_map)
 
-        # Only keep synonym mappings for terms not found in field_map
-        syn_map = {k: v for k, v in syn_map.to_dict().items() if k in unmapped_terms}
-    else:
-        syn_map = {}
-
-    # mapped synonyms will have values, otherwise NAs
-    mapped_df.index = mapped_df["orig_ids"]
-    mapped = mapped_df["__agg__"].map({**field_map.to_dict(), **syn_map})
-
-    n_mapped = (~mapped.isna()).sum()
+    # Log mapping statistics
+    n_mapped = (~mapped_df["mapped"].isna()).sum()
     if n_mapped > 0 and not mute:
         logger.info(f"standardized {n_mapped}/{n_input} terms")
 
+    # Return results
     if return_mapper:
-        # only returns mapped synonyms
-        mapper = mapped[~mapped.isna()].to_dict()
-        mapper = {k: v for k, v in mapper.items() if k != v}
-        if keep is False:
-            if not mute_warning:
-                logger.warning(
-                    "returning mapper might contain lists as values when 'keep=False'"
-                )
-            return {k: v[0] if len(v) == 1 else v for k, v in mapper.items()}
-        else:
-            return mapper
+        return _build_mapper(mapped_df, keep, mute_warning)
     else:
-        # returns a list in the input order with synonyms replaced
-        mapped_list = (
-            mapped.infer_objects(copy=False).fillna(mapped_df["orig_ids"]).tolist()
-        )
-        if keep is False:
-            if not mute_warning:
-                logger.warning("returning list might contain lists when 'keep=False'")
-            return [
-                v[0] if isinstance(v, list) and len(v) == 1 else v for v in mapped_list
-            ]
-        else:
-            return mapped_list
+        return _build_result_list(mapped_df, keep, mute_warning)
+
+
+def _build_synonym_map(
+    df: pd.DataFrame,
+    synonyms_field: str,
+    field: str,
+    unmapped_terms: set,
+    case_sensitive: bool,
+    keep: Literal["first", "last", False],
+    sep: str,
+) -> dict:
+    """Build a synonym mapping dictionary for unmapped terms."""
+    syn_series = explode_aggregated_column_to_map(
+        df=df,
+        agg_col=synonyms_field,
+        target_col=field,
+        keep=keep,
+        sep=sep,
+    )
+
+    if not case_sensitive:
+        # Convert synonym keys to lowercase for matching
+        syn_series.index = syn_series.index.str.lower()
+        # Remove duplicate synonym keys (keep first occurrence)
+        syn_series = syn_series[~syn_series.index.duplicated(keep="first")]
+
+    # Only keep synonym mappings for unmapped terms
+    return {k: v for k, v in syn_series.to_dict().items() if k in unmapped_terms}
+
+
+def _build_mapper(
+    mapped_df: pd.DataFrame,
+    keep: Literal["first", "last", False],
+    mute_warning: bool,
+) -> dict:
+    """Build the mapper dictionary from mapped dataframe."""
+    mapper_df = mapped_df[~mapped_df["mapped"].isna()].copy()
+    mapper = dict(zip(mapper_df["orig_ids"], mapper_df["mapped"]))
+    # Only include entries where mapping changed the value
+    mapper = {k: v for k, v in mapper.items() if k != v}
+
+    if keep is False:
+        if not mute_warning:
+            logger.warning(
+                "returning mapper might contain lists as values when 'keep=False'"
+            )
+        return {
+            k: v[0] if isinstance(v, list) and len(v) == 1 else v
+            for k, v in mapper.items()
+        }
+    return mapper
+
+
+def _build_result_list(
+    mapped_df: pd.DataFrame,
+    keep: Literal["first", "last", False],
+    mute_warning: bool,
+) -> list:
+    """Build the result list from mapped dataframe."""
+    result = mapped_df["mapped"].fillna(mapped_df["orig_ids"]).tolist()
+
+    if keep is False:
+        if not mute_warning:
+            logger.warning("returning list might contain lists when 'keep=False'")
+        return [v[0] if isinstance(v, list) and len(v) == 1 else v for v in result]
+    return result
 
 
 def to_str(
@@ -178,7 +240,7 @@ def not_empty_none_na(values: Iterable) -> pd.Series:
 def explode_aggregated_column_to_map(
     df,
     agg_col: str,
-    target_col=str,
+    target_col: str,
     keep: Literal["first", "last", False] = "first",
     sep: str = "|",
 ) -> pd.Series:
@@ -188,13 +250,12 @@ def explode_aggregated_column_to_map(
         df: A DataFrame containing the agg_col and target_col.
         agg_col: The name of the aggregated column
         target_col: the name of the target column
-                    If None, use the index as the target column
         keep : {'first', 'last', False}, default 'first'
             Determines which duplicates to mark as `pandas.DataFrame.duplicated`
         sep: Splits all values of the agg_col by this separator.
 
     Returns:
-        A pandas.Series index by the split values from the aggregated column
+        A pandas.Series indexed by the split values from the aggregated column
     """
     df = df[[target_col, agg_col]].drop_duplicates().dropna(subset=[agg_col])
 
@@ -214,3 +275,5 @@ def explode_aggregated_column_to_map(
         return gb.last()
     elif keep is False:
         return gb.apply(list)
+    else:
+        raise ValueError(f"Invalid value for keep: {keep}")
