@@ -281,6 +281,7 @@ def inspect(
     identifiers: Iterable,
     field: str,
     *,
+    standardize: bool = True,
     mute: bool = False,
     **kwargs,
 ) -> InspectResult:
@@ -332,7 +333,7 @@ def inspect(
 
     # backward compat
     info_msg = ""
-    if kwargs.get("inspect_synonyms") is not False:
+    if standardize and len(result.non_validated) > 0:
         try:
             synonyms_mapper = map_synonyms(
                 df=df,
