@@ -3,6 +3,7 @@
 <!-- prettier-ignore -->
 Name | PR | Developer | Date | Version
 --- | --- | --- | --- | ---
+🎨 Add standardize param to inspect | [106](https://github.com/laminlabs/lamin-utils/pull/106) | [sunnyosun](https://github.com/sunnyosun) | 2025-12-11 |
 ♻️ Refactor logger | [105](https://github.com/laminlabs/lamin-utils/pull/105) | [falexwolf](https://github.com/falexwolf) | 2025-12-11 |
 ♻️ Refactor map_synonyms to prioritize perfect match | [104](https://github.com/laminlabs/lamin-utils/pull/104) | [sunnyosun](https://github.com/sunnyosun) | 2025-12-11 |
 🐛Fix lookup order &  ⬆️ Pre-commit updates | [101](https://github.com/laminlabs/lamin-utils/pull/101) | [Zethson](https://github.com/Zethson) | 2025-07-15 |
