@@ -32,8 +32,6 @@
 """Logging and Profiling."""
 
 import logging
-
-# import platform
 import sys
 from datetime import datetime, timedelta, timezone
 from logging import CRITICAL, DEBUG, ERROR, INFO, WARNING, getLevelName
@@ -96,13 +94,100 @@ LEVEL_TO_COLORS = {
 RESET_COLOR = "\033[0m"
 
 
+class _LogFormatter(logging.Formatter):
+    def __init__(
+        self, fmt="{levelname}: {message}", datefmt="%Y-%m-%d %H:%M", style="{"
+    ):
+        super().__init__(fmt, datefmt, style)
+
+    def base_format(self, record: logging.LogRecord):
+        if LEVEL_TO_ICONS.get(record.levelno) is not None:
+            color = LEVEL_TO_COLORS.get(record.levelno, "")
+            icon = LEVEL_TO_ICONS[record.levelno]
+            return f"{color}{icon}{RESET_COLOR}" + " {message}"
+        else:
+            return "{message}"
+
+    def format(self, record: logging.LogRecord):
+        format_orig = self._style._fmt
+        self._style._fmt = self.base_format(record)
+        if record.time_passed:  # type: ignore
+            if "{time_passed}" in record.msg:
+                record.msg = record.msg.replace(
+                    "{time_passed}",
+                    record.time_passed,  # type: ignore
+                )
+            else:
+                self._style._fmt += " ({time_passed})"
+        if record.deep:  # type: ignore
+            record.msg = f"{record.msg}: {record.deep}"  # type: ignore
+        result = logging.Formatter.format(self, record)
+        self._style._fmt = format_orig
+        return result
+
+
 class RootLogger(logging.RootLogger):
-    def __init__(self, level="INFO"):
+    def __init__(self, level="WARNING"):
         super().__init__(level)
         self.propagate = False
         self._verbosity: int = 1
         self.indent = ""
         RootLogger.manager = logging.Manager(self)
+        self._setup_handler()
+
+    def _setup_handler(self):
+        """Initialize the logger with a StreamHandler."""
+        h = logging.StreamHandler(stream=sys.stdout)
+        h.setFormatter(_LogFormatter())
+        h.setLevel(self.level)
+        self.addHandler(h)
+
+    def set_handler(self):
+        """Set or reset the handler with current configuration."""
+        h = logging.StreamHandler(stream=sys.stdout)
+        h.setFormatter(_LogFormatter())
+        h.setLevel(self.level)
+
+        # Remove existing handlers
+        if len(self.handlers) == 1:
+            self.removeHandler(self.handlers[0])
+        elif len(self.handlers) > 1:
+            raise RuntimeError("Lamin's root logger somehow got more than one handler")
+
+        self.addHandler(h)
+
+    def set_level(self, level: int):
+        """Set the log level for both logger and handler."""
+        self.setLevel(level)
+        if self.handlers:
+            self.handlers[0].setLevel(level)
+
+    def set_verbosity(self, verbosity: int):
+        """Set verbosity level (0-5) which maps to log levels."""
+        if verbosity not in VERBOSITY_TO_LOGLEVEL:
+            raise ValueError(
+                f"verbosity needs to be one of {set(VERBOSITY_TO_LOGLEVEL.keys())}"
+            )
+        self.set_level(getLevelName(VERBOSITY_TO_LOGLEVEL[verbosity]))
+        self._verbosity = verbosity
+
+    def mute(self):
+        """Context manager to temporarily mute logger."""
+
+        class Muted:
+            def __init__(self, logger):
+                self.logger = logger
+                self.original_verbosity = None
+
+            def __enter__(self):
+                self.original_verbosity = self.logger._verbosity
+                self.logger.set_verbosity(0)
+                return self
+
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                self.logger.set_verbosity(self.original_verbosity)
+
+        return Muted(self)
 
     def log(  # type: ignore
         self,
@@ -122,7 +207,7 @@ class RootLogger(logging.RootLogger):
                 to now is appended to `msg` as ` (HH:MM:SS)`.
                 If `msg` contains `{time_passed}`, the time difference is instead
                 inserted at that position.
-            deep: If the current verbosity is higher than the log function’s level,
+            deep: If the current verbosity is higher than the log function's level,
                 this gets displayed as well
             extra: Additional values you can specify in `msg` like `{time_passed}`.
         """
@@ -179,92 +264,5 @@ class RootLogger(logging.RootLogger):
         return self.log(SAVE, msg, time=time, deep=deep, extra=extra)
 
 
-class _LogFormatter(logging.Formatter):
-    def __init__(
-        self, fmt="{levelname}: {message}", datefmt="%Y-%m-%d %H:%M", style="{"
-    ):
-        super().__init__(fmt, datefmt, style)
-
-    def base_format(self, record: logging.LogRecord):
-        # if platform.system() == "Windows":
-        #     return f"{record.levelname}:" + " {message}"
-        # else:
-        if LEVEL_TO_ICONS.get(record.levelno) is not None:
-            color = LEVEL_TO_COLORS.get(record.levelno, "")
-            icon = LEVEL_TO_ICONS[record.levelno]
-            return f"{color}{icon}{RESET_COLOR}" + " {message}"
-        else:
-            return "{message}"
-
-    def format(self, record: logging.LogRecord):
-        format_orig = self._style._fmt
-        self._style._fmt = self.base_format(record)
-        if record.time_passed:  # type: ignore
-            if "{time_passed}" in record.msg:
-                record.msg = record.msg.replace(
-                    "{time_passed}",
-                    record.time_passed,  # type: ignore
-                )
-            else:
-                self._style._fmt += " ({time_passed})"
-        if record.deep:  # type: ignore
-            record.msg = f"{record.msg}: {record.deep}"  # type: ignore
-        result = logging.Formatter.format(self, record)
-        self._style._fmt = format_orig
-        return result
-
-
+# Create the logger instance
 logger = RootLogger()
-
-
-def set_handler(logger):
-    h = logging.StreamHandler(stream=sys.stdout)
-    h.setFormatter(_LogFormatter())
-    h.setLevel(logger.level)
-    if len(logger.handlers) == 1:
-        logger.removeHandler(logger.handlers[0])
-    elif len(logger.handlers) > 1:
-        raise RuntimeError("Lamin's root logger somehow got more than one handler")
-    logger.addHandler(h)
-
-
-set_handler(logger)
-
-
-def set_log_level(logger, level: int):
-    logger.setLevel(level)
-    (h,) = logger.handlers  # can only be 1
-    h.setLevel(level)
-
-
-# this also sets it for the handler
-RootLogger.set_level = set_log_level  # type: ignore
-
-
-def set_verbosity(logger, verbosity: int):
-    if verbosity not in VERBOSITY_TO_LOGLEVEL:
-        raise ValueError(
-            f"verbosity needs to be one of {set(VERBOSITY_TO_LOGLEVEL.keys())}"
-        )
-    logger.set_level(VERBOSITY_TO_LOGLEVEL[verbosity])
-    logger._verbosity = verbosity
-
-
-RootLogger.set_verbosity = set_verbosity  # type: ignore
-
-
-def mute(logger):
-    """Context manager to mute logger."""
-
-    class Muted:
-        def __enter__(self):
-            self.original_verbosity = logger._verbosity
-            logger.set_verbosity(0)
-
-        def __exit__(self, exc_type, exc_val, exc_tb):
-            logger.set_verbosity(self.original_verbosity)
-
-    return Muted()
-
-
-RootLogger.mute = mute  # type: ignore
