@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import keyword
 import re
 from collections import namedtuple
 from typing import TYPE_CHECKING, Any, Literal
@@ -232,6 +233,9 @@ class Lookup:
         # Process values, wrapping lists in warning wrapper
         processed_dict = {}
         for key, value in lookup_dict_copy.items():
+            # Handle Python keywords by appending an underscore
+            if keyword.iskeyword(key):
+                key = f"{key}_"
             if isinstance(value, list) and len(value) > 1:
                 # Wrap list values that have more than one item
                 processed_dict[key] = _ListValueWrapper(
