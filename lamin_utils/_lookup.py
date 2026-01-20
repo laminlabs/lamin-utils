@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import keyword
 import re
 from collections import namedtuple
 from typing import TYPE_CHECKING, Any, Literal
@@ -223,15 +224,12 @@ class Lookup:
         # Create a copy to avoid modifying the original
         lookup_dict_copy = self._lookup_dict.copy()
 
-        # Names are invalid if they conflict with Python keywords.
-        if "class" in lookup_dict_copy:
-            lookup_dict_copy[f"{self._prefix.lower()}_class"] = lookup_dict_copy.pop(
-                "class"
-            )
-
         # Process values, wrapping lists in warning wrapper
         processed_dict = {}
         for key, value in lookup_dict_copy.items():
+            # Handle Python keywords by appending an underscore
+            if keyword.iskeyword(key):
+                key = f"{key}_"
             if isinstance(value, list) and len(value) > 1:
                 # Wrap list values that have more than one item
                 processed_dict[key] = _ListValueWrapper(

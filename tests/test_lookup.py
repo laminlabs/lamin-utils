@@ -67,3 +67,17 @@ def test_lookup_multiple_records():
 
     lookup = Lookup(df=df, field="name", keep=False).lookup()
     assert len(lookup.experiment) == 2
+
+
+def test_lookup_keyword_field():
+    df = pd.DataFrame(
+        {
+            "name": ["DEL", "class", "normal"],
+            "value": [1, 2, 3],
+        }
+    )
+
+    lookup = Lookup(df=df, field="name").lookup()
+    assert lookup.del_.value == 1
+    assert lookup.class_.value == 2
+    assert lookup.normal.value == 3
