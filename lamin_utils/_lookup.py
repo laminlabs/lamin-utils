@@ -224,12 +224,6 @@ class Lookup:
         # Create a copy to avoid modifying the original
         lookup_dict_copy = self._lookup_dict.copy()
 
-        # Names are invalid if they conflict with Python keywords.
-        if "class" in lookup_dict_copy:
-            lookup_dict_copy[f"{self._prefix.lower()}_class"] = lookup_dict_copy.pop(
-                "class"
-            )
-
         # Process values, wrapping lists in warning wrapper
         processed_dict = {}
         for key, value in lookup_dict_copy.items():
