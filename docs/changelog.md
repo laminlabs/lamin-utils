@@ -3,6 +3,7 @@
 <!-- prettier-ignore -->
 Name | PR | Developer | Date | Version
 --- | --- | --- | --- | ---
+🚸 Fix lookup duplicate handling for keep="first"/"last" return types | [109](https://github.com/laminlabs/lamin-utils/pull/109) | [sunnyosun](https://github.com/sunnyosun) | 2026-02-26 |
 ✨ Pandas 3.0.0 compatibility | [108](https://github.com/laminlabs/lamin-utils/pull/108) | [Zethson](https://github.com/Zethson) | 2026-02-23 |
 🎨 Handle python keywords in lookup | [107](https://github.com/laminlabs/lamin-utils/pull/107) | [sunnyosun](https://github.com/sunnyosun) | 2026-01-20 |
 🎨 Add standardize param to inspect | [106](https://github.com/laminlabs/lamin-utils/pull/106) | [sunnyosun](https://github.com/sunnyosun) | 2025-12-11 |
